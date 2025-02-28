@@ -21,7 +21,7 @@ export interface CourseModule {
 
 export interface ModuleContent {
   id: string;
-  type: 'video' | 'pdf' | 'interactive';
+  type: 'pdf' | 'interactive';
   title: string;
   url: string;
   duration?: string;

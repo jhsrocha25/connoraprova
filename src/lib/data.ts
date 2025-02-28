@@ -20,7 +20,7 @@ export const mockCourses: Course[] = [
         content: [
           {
             id: 'c1',
-            type: 'video',
+            type: 'pdf',
             title: 'Introdução aos Princípios Fundamentais',
             url: '#',
             duration: '32min',
@@ -43,7 +43,7 @@ export const mockCourses: Course[] = [
         content: [
           {
             id: 'c3',
-            type: 'video',
+            type: 'pdf',
             title: 'Direitos e Deveres Individuais e Coletivos',
             url: '#',
             duration: '45min',
@@ -78,7 +78,7 @@ export const mockCourses: Course[] = [
         content: [
           {
             id: 'c5',
-            type: 'video',
+            type: 'pdf',
             title: 'Proposições e Conectivos Lógicos',
             url: '#',
             duration: '28min',
@@ -101,7 +101,7 @@ export const mockCourses: Course[] = [
         content: [
           {
             id: 'c7',
-            type: 'video',
+            type: 'pdf',
             title: 'Sequências Numéricas',
             url: '#',
             duration: '35min',
@@ -136,7 +136,7 @@ export const mockCourses: Course[] = [
         content: [
           {
             id: 'c9',
-            type: 'video',
+            type: 'pdf',
             title: 'Período Simples e Composto',
             url: '#',
             duration: '40min',
@@ -159,7 +159,7 @@ export const mockCourses: Course[] = [
         content: [
           {
             id: 'c11',
-            type: 'video',
+            type: 'interactive',
             title: 'Estratégias de Interpretação',
             url: '#',
             duration: '38min',
@@ -194,7 +194,7 @@ export const mockCourses: Course[] = [
         content: [
           {
             id: 'c13',
-            type: 'video',
+            type: 'pdf',
             title: 'Classificação dos Atos Administrativos',
             url: '#',
             duration: '42min',
@@ -217,7 +217,7 @@ export const mockCourses: Course[] = [
         content: [
           {
             id: 'c15',
-            type: 'video',
+            type: 'pdf',
             title: 'Modalidades de Licitação',
             url: '#',
             duration: '48min',
