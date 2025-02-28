@@ -175,7 +175,8 @@ const AIChat = () => {
                 <span>Voltar para o chat</span>
               </Button>
             </div>
-            <QuestionGenerator initialPrompt={generatorPrompt} />
+            {/* Removendo a prop initialPrompt que estava causando o erro */}
+            <QuestionGenerator />
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
