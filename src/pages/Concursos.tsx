@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Search, Filter, Clock, University, MapPin, GraduationCap, 
-  DollarSign, Bell, AlertTriangle, TrendingUp, CheckCircle, AlertCircle 
+  DollarSign, Bell, AlertTriangle, TrendingUp, CheckCircle, AlertCircle, X as XIcon 
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Link } from 'react-router-dom';
@@ -20,7 +19,6 @@ import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
 
-// Dados de exemplo para concursos
 const mockConcursos: Concurso[] = [
   {
     id: '1',
@@ -158,7 +156,6 @@ const mockConcursos: Concurso[] = [
   }
 ];
 
-// Definir os valores para filtros avançados
 const areaOptions = [
   { value: 'juridica', label: 'Jurídica' },
   { value: 'administrativa', label: 'Administrativa' },
@@ -201,7 +198,6 @@ const organizadoraOptions = [
   { value: 'quadrix', label: 'QUADRIX' },
 ];
 
-// Componente para exibir os concursos em destaque
 const ConcursosEmDestaque = ({ concursos }: { concursos: Concurso[] }) => {
   const destaqueConcursos = concursos.filter(c => c.status === 'aberto').slice(0, 3);
   
@@ -249,13 +245,11 @@ const ConcursosEmDestaque = ({ concursos }: { concursos: Concurso[] }) => {
 };
 
 const ConcursoCard = ({ concurso }: { concurso: Concurso }) => {
-  // Calcular o progresso geral do concurso
   const materiaTotal = concurso.materias.length;
   const progressoTotal = concurso.materias.reduce(
     (acc, materia) => acc + (materia.progress || 0), 0
   ) / materiaTotal;
 
-  // Função para determinar o ícone de status
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'aberto':
@@ -269,7 +263,6 @@ const ConcursoCard = ({ concurso }: { concurso: Concurso }) => {
     }
   };
 
-  // Função para determinar a variante do status
   const getStatusVariant = (status: string) => {
     switch (status) {
       case 'aberto':
@@ -283,7 +276,6 @@ const ConcursoCard = ({ concurso }: { concurso: Concurso }) => {
     }
   };
 
-  // Função para formatar o texto do status
   const getStatusText = (status: string) => {
     switch (status) {
       case 'aberto':
@@ -356,7 +348,6 @@ const ConcursoCard = ({ concurso }: { concurso: Concurso }) => {
   );
 };
 
-// Componente para o filtro avançado
 const FiltroAvancado = ({
   isOpen,
   onClose,
@@ -412,7 +403,7 @@ const FiltroAvancado = ({
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold">Filtros Avançados</h3>
             <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="h-4 w-4" />
+              <XIcon className="h-4 w-4" />
             </Button>
           </div>
 
@@ -572,13 +563,11 @@ const FiltroAvancado = ({
   );
 };
 
-// Componente para informações da Organizadora
 const OrganizadoraInfo = ({ 
   organizadora 
 }: { 
   organizadora: string 
 }) => {
-  // Informações fictícias sobre bancas
   const bancaInfo: Record<string, { 
     qtdQuestoes: string, 
     criterios: string, 
@@ -638,7 +627,6 @@ const Concursos = () => {
   const [showOrganizadoraInfo, setShowOrganizadoraInfo] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
   
-  // Filtros avançados
   const [filtrosAvancados, setFiltrosAvancados] = useState({
     area: [] as string[],
     localidade: [] as string[],
@@ -649,7 +637,6 @@ const Concursos = () => {
   });
 
   useEffect(() => {
-    // Simular carregamento
     const timer = setTimeout(() => {
       setIsLoaded(true);
     }, 500);
@@ -659,7 +646,6 @@ const Concursos = () => {
   useEffect(() => {
     let results = [...mockConcursos];
     
-    // Aplicar filtro de pesquisa
     if (searchQuery) {
       const query = searchQuery.toLowerCase().trim();
       results = results.filter(concurso => 
@@ -669,40 +655,31 @@ const Concursos = () => {
       );
     }
     
-    // Aplicar filtro de organização
     if (organizacao !== 'all') {
       results = results.filter(concurso => concurso.organizacao === organizacao);
     }
     
-    // Aplicar filtro de status
     if (status !== 'all') {
       results = results.filter(concurso => concurso.status === status);
     }
     
-    // Aplicar filtros avançados se existirem
     if (filtrosAvancados.area.length > 0) {
-      // Simular a filtragem por área
-      // Como os dados mockados não têm área, isso é apenas ilustrativo
       console.log('Filtrando por áreas:', filtrosAvancados.area);
     }
     
     if (filtrosAvancados.localidade.length > 0) {
-      // Simular a filtragem por localidade
       console.log('Filtrando por localidades:', filtrosAvancados.localidade);
     }
     
     if (filtrosAvancados.escolaridade.length > 0) {
-      // Simular a filtragem por escolaridade
       console.log('Filtrando por escolaridade:', filtrosAvancados.escolaridade);
     }
     
     if (filtrosAvancados.faixaSalarial) {
-      // Simular a filtragem por faixa salarial
       console.log('Filtrando por faixa salarial:', filtrosAvancados.faixaSalarial);
     }
     
     if (filtrosAvancados.organizadora.length > 0) {
-      // Simular a filtragem por organizadora
       console.log('Filtrando por organizadoras:', filtrosAvancados.organizadora);
     }
     
@@ -753,7 +730,6 @@ const Concursos = () => {
             </div>
           </div>
 
-          {/* Concursos em Alta (Destaques) */}
           <ConcursosEmDestaque concursos={mockConcursos} />
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -915,7 +891,6 @@ const Concursos = () => {
         </div>
       </main>
 
-      {/* Filtro Avançado Modal */}
       <FiltroAvancado 
         isOpen={showFiltroAvancado}
         onClose={() => setShowFiltroAvancado(false)}

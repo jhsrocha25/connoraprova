@@ -131,7 +131,8 @@ const Register = () => {
     }
     
     try {
-      await register(name, email, password, dateOfBirth, concurso);
+      // Fix: Pass only the required arguments according to the AuthContext definition
+      await register(name, email, password);
       toast({
         title: "Conta criada com sucesso!",
         description: "Bem-vindo ao Connor Aprova!",
