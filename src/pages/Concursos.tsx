@@ -4,13 +4,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, Clock } from 'lucide-react';
+import { 
+  Search, Filter, Clock, University, MapPin, GraduationCap, 
+  DollarSign, Bell, AlertTriangle, TrendingUp, CheckCircle, AlertCircle 
+} from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Concurso } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { toast } from '@/hooks/use-toast';
 
 // Dados de exemplo para concursos
 const mockConcursos: Concurso[] = [
@@ -150,12 +158,144 @@ const mockConcursos: Concurso[] = [
   }
 ];
 
+// Definir os valores para filtros avançados
+const areaOptions = [
+  { value: 'juridica', label: 'Jurídica' },
+  { value: 'administrativa', label: 'Administrativa' },
+  { value: 'policial', label: 'Policial' },
+  { value: 'saude', label: 'Saúde' },
+  { value: 'ti', label: 'TI' },
+  { value: 'educacao', label: 'Educação' },
+];
+
+const localidadeOptions = [
+  { value: 'nacional', label: 'Nacional' },
+  { value: 'sp', label: 'São Paulo' },
+  { value: 'rj', label: 'Rio de Janeiro' },
+  { value: 'mg', label: 'Minas Gerais' },
+  { value: 'rs', label: 'Rio Grande do Sul' },
+  { value: 'pr', label: 'Paraná' },
+  { value: 'df', label: 'Distrito Federal' },
+];
+
+const escolaridadeOptions = [
+  { value: 'medio', label: 'Nível Médio' },
+  { value: 'tecnico', label: 'Nível Técnico' },
+  { value: 'superior', label: 'Nível Superior' },
+];
+
+const faixaSalarialOptions = [
+  { value: 'ate3000', label: 'Até R$ 3.000' },
+  { value: '3000a5000', label: 'R$ 3.000 a R$ 5.000' },
+  { value: '5000a8000', label: 'R$ 5.000 a R$ 8.000' },
+  { value: '8000a12000', label: 'R$ 8.000 a R$ 12.000' },
+  { value: 'acima12000', label: 'Acima de R$ 12.000' },
+];
+
+const organizadoraOptions = [
+  { value: 'cespe', label: 'CESPE/CEBRASPE' },
+  { value: 'fcc', label: 'FCC' },
+  { value: 'fgv', label: 'FGV' },
+  { value: 'vunesp', label: 'VUNESP' },
+  { value: 'ibfc', label: 'IBFC' },
+  { value: 'quadrix', label: 'QUADRIX' },
+];
+
+// Componente para exibir os concursos em destaque
+const ConcursosEmDestaque = ({ concursos }: { concursos: Concurso[] }) => {
+  const destaqueConcursos = concursos.filter(c => c.status === 'aberto').slice(0, 3);
+  
+  return (
+    <div className="mb-8">
+      <div className="flex items-center mb-4">
+        <TrendingUp className="h-5 w-5 mr-2 text-primary" />
+        <h2 className="text-xl font-bold">Concursos em Alta</h2>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {destaqueConcursos.map((concurso) => (
+          <Card key={concurso.id} className="border-2 border-primary/20 hover:border-primary/40 transition-all">
+            <CardHeader className="p-4 pb-0">
+              <div className="flex justify-between items-start">
+                <CardTitle className="text-base">{concurso.title}</CardTitle>
+                {concurso.dataProva && new Date(concurso.dataProva).getTime() - new Date().getTime() < 7 * 24 * 60 * 60 * 1000 && (
+                  <Badge variant="destructive" className="flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    Prazo Final
+                  </Badge>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="p-4">
+              <div className="flex items-center text-sm mb-2">
+                <University className="h-4 w-4 mr-1 text-muted-foreground" />
+                <span>{concurso.organizacao}</span>
+              </div>
+              <div className="flex items-center text-sm">
+                <Clock className="h-4 w-4 mr-1 text-muted-foreground" />
+                <span>Prova: {concurso.dataProva || 'A definir'}</span>
+              </div>
+            </CardContent>
+            <CardFooter className="p-4 pt-0">
+              <Link to={`/concursos/${concurso.id}`} className="w-full">
+                <Button variant="outline" className="w-full">Ver detalhes</Button>
+              </Link>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const ConcursoCard = ({ concurso }: { concurso: Concurso }) => {
   // Calcular o progresso geral do concurso
   const materiaTotal = concurso.materias.length;
   const progressoTotal = concurso.materias.reduce(
     (acc, materia) => acc + (materia.progress || 0), 0
   ) / materiaTotal;
+
+  // Função para determinar o ícone de status
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'aberto':
+        return <AlertCircle className="h-4 w-4 mr-1" />;
+      case 'encerrado':
+        return <CheckCircle className="h-4 w-4 mr-1" />;
+      case 'previsto':
+        return <Clock className="h-4 w-4 mr-1" />;
+      default:
+        return <Clock className="h-4 w-4 mr-1" />;
+    }
+  };
+
+  // Função para determinar a variante do status
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case 'aberto':
+        return 'default';
+      case 'encerrado':
+        return 'secondary';
+      case 'previsto':
+        return 'outline';
+      default:
+        return 'outline';
+    }
+  };
+
+  // Função para formatar o texto do status
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'aberto':
+        return 'Edital Publicado';
+      case 'encerrado':
+        return 'Finalizado';
+      case 'previsto':
+        return 'Previsto';
+      default:
+        return status;
+    }
+  };
 
   return (
     <Card className="h-full flex flex-col hover:shadow-md transition-shadow">
@@ -168,13 +308,11 @@ const ConcursoCard = ({ concurso }: { concurso: Concurso }) => {
           />
           <div className="absolute top-2 right-2">
             <Badge 
-              variant={
-                concurso.status === 'aberto' ? 'default' :
-                concurso.status === 'encerrado' ? 'secondary' : 'outline'
-              }
+              variant={getStatusVariant(concurso.status)}
+              className="flex items-center"
             >
-              {concurso.status === 'aberto' ? 'Aberto' : 
-               concurso.status === 'encerrado' ? 'Encerrado' : 'Previsto'}
+              {getStatusIcon(concurso.status)}
+              {getStatusText(concurso.status)}
             </Badge>
           </div>
         </div>
@@ -184,7 +322,7 @@ const ConcursoCard = ({ concurso }: { concurso: Concurso }) => {
       <CardContent className="flex-grow">
         <div className="space-y-2">
           <div className="flex items-center text-sm text-muted-foreground">
-            <Filter className="h-4 w-4 mr-1" />
+            <University className="h-4 w-4 mr-1" />
             {concurso.organizacao}
           </div>
           {concurso.dataProva && (
@@ -218,13 +356,297 @@ const ConcursoCard = ({ concurso }: { concurso: Concurso }) => {
   );
 };
 
+// Componente para o filtro avançado
+const FiltroAvancado = ({
+  isOpen,
+  onClose,
+  filtros,
+  setFiltros
+}: {
+  isOpen: boolean,
+  onClose: () => void,
+  filtros: any,
+  setFiltros: (filtros: any) => void
+}) => {
+  const [localFiltros, setLocalFiltros] = useState(filtros);
+
+  const handleApplyFilters = () => {
+    setFiltros(localFiltros);
+    onClose();
+    toast({
+      title: "Filtros aplicados",
+      description: "Os resultados foram atualizados com base nos filtros selecionados."
+    });
+  };
+
+  const handleResetFilters = () => {
+    const resetFiltros = {
+      area: [],
+      localidade: [],
+      escolaridade: [],
+      faixaSalarial: '',
+      organizadora: [],
+      notificacoes: false
+    };
+    setLocalFiltros(resetFiltros);
+    setFiltros(resetFiltros);
+    onClose();
+    toast({
+      title: "Filtros redefinidos",
+      description: "Todos os filtros foram removidos."
+    });
+  };
+
+  const toggleArrayFilter = (array: string[], item: string) => {
+    return array.includes(item)
+      ? array.filter(i => i !== item)
+      : [...array, item];
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-card border rounded-lg shadow-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Filtros Avançados</h3>
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="space-y-6">
+            <div>
+              <h4 className="text-sm font-medium mb-2">Área</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {areaOptions.map(option => (
+                  <div key={option.value} className="flex items-center space-x-2">
+                    <Checkbox 
+                      id={`area-${option.value}`} 
+                      checked={localFiltros.area.includes(option.value)}
+                      onCheckedChange={() => {
+                        setLocalFiltros({
+                          ...localFiltros,
+                          area: toggleArrayFilter(localFiltros.area, option.value)
+                        });
+                      }}
+                    />
+                    <Label htmlFor={`area-${option.value}`}>{option.label}</Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Separator />
+
+            <div>
+              <h4 className="text-sm font-medium mb-2">Localidade</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {localidadeOptions.map(option => (
+                  <div key={option.value} className="flex items-center space-x-2">
+                    <Checkbox 
+                      id={`localidade-${option.value}`} 
+                      checked={localFiltros.localidade.includes(option.value)}
+                      onCheckedChange={() => {
+                        setLocalFiltros({
+                          ...localFiltros,
+                          localidade: toggleArrayFilter(localFiltros.localidade, option.value)
+                        });
+                      }}
+                    />
+                    <Label htmlFor={`localidade-${option.value}`}>{option.label}</Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Separator />
+
+            <div>
+              <h4 className="text-sm font-medium mb-2">Escolaridade</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {escolaridadeOptions.map(option => (
+                  <div key={option.value} className="flex items-center space-x-2">
+                    <Checkbox 
+                      id={`escolaridade-${option.value}`} 
+                      checked={localFiltros.escolaridade.includes(option.value)}
+                      onCheckedChange={() => {
+                        setLocalFiltros({
+                          ...localFiltros,
+                          escolaridade: toggleArrayFilter(localFiltros.escolaridade, option.value)
+                        });
+                      }}
+                    />
+                    <Label htmlFor={`escolaridade-${option.value}`}>{option.label}</Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Separator />
+
+            <div>
+              <h4 className="text-sm font-medium mb-2">Faixa Salarial</h4>
+              <Select 
+                value={localFiltros.faixaSalarial} 
+                onValueChange={(value) => {
+                  setLocalFiltros({
+                    ...localFiltros,
+                    faixaSalarial: value
+                  });
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a faixa salarial" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todas as faixas</SelectItem>
+                  {faixaSalarialOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Separator />
+
+            <div>
+              <h4 className="text-sm font-medium mb-2">Organizadora</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {organizadoraOptions.map(option => (
+                  <div key={option.value} className="flex items-center space-x-2">
+                    <Checkbox 
+                      id={`organizadora-${option.value}`} 
+                      checked={localFiltros.organizadora.includes(option.value)}
+                      onCheckedChange={() => {
+                        setLocalFiltros({
+                          ...localFiltros,
+                          organizadora: toggleArrayFilter(localFiltros.organizadora, option.value)
+                        });
+                      }}
+                    />
+                    <Label htmlFor={`organizadora-${option.value}`}>{option.label}</Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Separator />
+
+            <div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="notify" className="text-sm font-medium">
+                  Receber notificações
+                </Label>
+                <Switch 
+                  id="notify" 
+                  checked={localFiltros.notificacoes}
+                  onCheckedChange={(checked) => {
+                    setLocalFiltros({
+                      ...localFiltros,
+                      notificacoes: checked
+                    });
+                  }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Ative para receber alertas sobre novos concursos que correspondam aos seus filtros
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-between mt-6 gap-4">
+            <Button variant="outline" onClick={handleResetFilters} className="w-1/2">
+              Redefinir
+            </Button>
+            <Button onClick={handleApplyFilters} className="w-1/2">
+              Aplicar Filtros
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Componente para informações da Organizadora
+const OrganizadoraInfo = ({ 
+  organizadora 
+}: { 
+  organizadora: string 
+}) => {
+  // Informações fictícias sobre bancas
+  const bancaInfo: Record<string, { 
+    qtdQuestoes: string, 
+    criterios: string, 
+    dificuldade: 'Baixa' | 'Média' | 'Alta'
+  }> = {
+    'INSS': { 
+      qtdQuestoes: '120 questões objetivas', 
+      criterios: 'Cada questão vale 1 ponto, não há penalidade para erros', 
+      dificuldade: 'Média' 
+    },
+    'Polícia Federal': { 
+      qtdQuestoes: '100 questões objetivas + prova discursiva', 
+      criterios: 'Questões objetivas com penalidade para erros', 
+      dificuldade: 'Alta' 
+    },
+    'TRT 4ª Região': { 
+      qtdQuestoes: '80 questões objetivas', 
+      criterios: 'Sem penalidade para erros', 
+      dificuldade: 'Média' 
+    },
+  };
+
+  const info = bancaInfo[organizadora] || {
+    qtdQuestoes: 'Varia conforme o edital',
+    criterios: 'Consulte o edital para informações detalhadas',
+    dificuldade: 'Média'
+  };
+
+  return (
+    <div className="p-4 bg-muted/50 rounded-lg mt-2">
+      <h3 className="font-medium mb-2">Perfil da Banca: {organizadora}</h3>
+      <div className="space-y-1 text-sm">
+        <p><span className="font-medium">Questões:</span> {info.qtdQuestoes}</p>
+        <p><span className="font-medium">Critérios:</span> {info.criterios}</p>
+        <p className="flex items-center">
+          <span className="font-medium mr-1">Dificuldade:</span> 
+          <span className={
+            info.dificuldade === 'Alta' ? 'text-destructive' : 
+            info.dificuldade === 'Média' ? 'text-amber-500' : 
+            'text-green-500'
+          }>
+            {info.dificuldade}
+          </span>
+        </p>
+      </div>
+    </div>
+  );
+};
+
 const Concursos = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [organizacao, setOrganizacao] = useState('all');
   const [status, setStatus] = useState('all');
   const [filteredConcursos, setFilteredConcursos] = useState<Concurso[]>(mockConcursos);
+  const [showFiltroAvancado, setShowFiltroAvancado] = useState(false);
+  const [showOrganizadoraInfo, setShowOrganizadoraInfo] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
+  
+  // Filtros avançados
+  const [filtrosAvancados, setFiltrosAvancados] = useState({
+    area: [] as string[],
+    localidade: [] as string[],
+    escolaridade: [] as string[],
+    faixaSalarial: '',
+    organizadora: [] as string[],
+    notificacoes: false
+  });
 
   useEffect(() => {
     // Simular carregamento
@@ -257,11 +679,52 @@ const Concursos = () => {
       results = results.filter(concurso => concurso.status === status);
     }
     
+    // Aplicar filtros avançados se existirem
+    if (filtrosAvancados.area.length > 0) {
+      // Simular a filtragem por área
+      // Como os dados mockados não têm área, isso é apenas ilustrativo
+      console.log('Filtrando por áreas:', filtrosAvancados.area);
+    }
+    
+    if (filtrosAvancados.localidade.length > 0) {
+      // Simular a filtragem por localidade
+      console.log('Filtrando por localidades:', filtrosAvancados.localidade);
+    }
+    
+    if (filtrosAvancados.escolaridade.length > 0) {
+      // Simular a filtragem por escolaridade
+      console.log('Filtrando por escolaridade:', filtrosAvancados.escolaridade);
+    }
+    
+    if (filtrosAvancados.faixaSalarial) {
+      // Simular a filtragem por faixa salarial
+      console.log('Filtrando por faixa salarial:', filtrosAvancados.faixaSalarial);
+    }
+    
+    if (filtrosAvancados.organizadora.length > 0) {
+      // Simular a filtragem por organizadora
+      console.log('Filtrando por organizadoras:', filtrosAvancados.organizadora);
+    }
+    
     setFilteredConcursos(results);
-  }, [searchQuery, organizacao, status]);
+  }, [searchQuery, organizacao, status, filtrosAvancados]);
 
   const organizacoes = ['all', ...new Set(mockConcursos.map(concurso => concurso.organizacao))];
-  const statusOptions = ['all', 'aberto', 'encerrado', 'previsto'];
+  const statusOptions = [
+    {value: 'all', label: 'Todos'},
+    {value: 'previsto', label: 'Previstos'}, 
+    {value: 'aberto', label: 'Edital Publicado'}, 
+    {value: 'inscricoes-encerradas', label: 'Inscrições Encerradas'},
+    {value: 'em-andamento', label: 'Em Andamento'},
+    {value: 'encerrado', label: 'Finalizados'}
+  ];
+
+  const handleActivateNotifications = () => {
+    toast({
+      title: "Notificações ativadas",
+      description: "Você receberá atualizações sobre novos concursos e prazos importantes.",
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -276,7 +739,22 @@ const Concursos = () => {
                 Prepare-se para concursos públicos com questões específicas para cada prova.
               </p>
             </div>
+            
+            <div className="flex items-center space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-1"
+                onClick={handleActivateNotifications}
+              >
+                <Bell className="h-4 w-4" />
+                Ativar Notificações
+              </Button>
+            </div>
           </div>
+
+          {/* Concursos em Alta (Destaques) */}
+          <ConcursosEmDestaque concursos={mockConcursos} />
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="md:col-span-2">
@@ -291,8 +769,16 @@ const Concursos = () => {
               </div>
             </div>
             <div>
-              <Select value={organizacao} onValueChange={setOrganizacao}>
-                <SelectTrigger>
+              <Select value={organizacao} onValueChange={(value) => {
+                setOrganizacao(value);
+                if (value !== 'all') {
+                  setShowOrganizadoraInfo(mockConcursos.find(c => c.organizacao === value)?.organizacao || null);
+                } else {
+                  setShowOrganizadoraInfo(null);
+                }
+              }}>
+                <SelectTrigger className="w-full flex items-center">
+                  <University className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Organização" />
                 </SelectTrigger>
                 <SelectContent>
@@ -303,22 +789,52 @@ const Concursos = () => {
                   ))}
                 </SelectContent>
               </Select>
+              
+              {showOrganizadoraInfo && (
+                <OrganizadoraInfo organizadora={showOrganizadoraInfo} />
+              )}
             </div>
             <div>
               <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full flex items-center">
+                  <Clock className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
                   {statusOptions.map((opt) => (
-                    <SelectItem key={opt} value={opt}>
-                      {opt === 'all' ? 'Todos os status' : 
-                       opt === 'aberto' ? 'Aberto' : 
-                       opt === 'encerrado' ? 'Encerrado' : 'Previsto'}
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center mb-6">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowFiltroAvancado(true)}
+              className="flex items-center gap-2"
+            >
+              <Filter className="h-4 w-4" />
+              Filtros Avançados
+            </Button>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {filteredConcursos.length} resultados encontrados
+              </span>
+              {(filtrosAvancados.area.length > 0 || 
+                filtrosAvancados.localidade.length > 0 || 
+                filtrosAvancados.escolaridade.length > 0 || 
+                filtrosAvancados.faixaSalarial || 
+                filtrosAvancados.organizadora.length > 0) && (
+                <Badge variant="outline" className="gap-1">
+                  <Filter className="h-3 w-3" />
+                  Filtros ativos
+                </Badge>
+              )}
             </div>
           </div>
 
@@ -398,6 +914,14 @@ const Concursos = () => {
           </Tabs>
         </div>
       </main>
+
+      {/* Filtro Avançado Modal */}
+      <FiltroAvancado 
+        isOpen={showFiltroAvancado}
+        onClose={() => setShowFiltroAvancado(false)}
+        filtros={filtrosAvancados}
+        setFiltros={setFiltrosAvancados}
+      />
     </div>
   );
 };
