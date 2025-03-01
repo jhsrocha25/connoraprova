@@ -1,310 +1,318 @@
 
-import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { 
-  ChevronLeft, Check, AlertCircle, FileText, Download, Clock, Calendar, Award, BookOpen
-} from 'lucide-react';
+import React, { useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import Navbar from '@/components/Navbar';
-import { mockConcursos } from '@/pages/Concursos';
-import { Concurso, ConcursoMateria } from '@/lib/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { Concurso, Question } from '@/lib/types';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { BookOpen, FileText, Download, ChevronLeft, MessageCircle } from 'lucide-react';
+
+// Mock data for concursos (This would typically come from an API)
+const mockConcursos: Concurso[] = [
+  {
+    id: '1',
+    title: 'Concurso INSS 2023',
+    description: 'Concurso para Técnico do Seguro Social do INSS com 1.000 vagas em todo o Brasil.',
+    thumbnail: '/placeholder.svg',
+    organizacao: 'Instituto Nacional do Seguro Social',
+    dataProva: '15/12/2023',
+    status: 'aberto',
+    materias: [
+      {
+        id: '101',
+        title: 'Direito Constitucional',
+        description: 'Princípios fundamentais, direitos e garantias fundamentais.',
+        questoes: [],
+        progress: 45
+      },
+      {
+        id: '102',
+        title: 'Direito Administrativo',
+        description: 'Administração pública, atos administrativos.',
+        questoes: [],
+        progress: 30
+      },
+      {
+        id: '103',
+        title: 'Legislação Previdenciária',
+        description: 'Seguridade Social, Previdência Social, Regimes.',
+        questoes: [],
+        progress: 65
+      }
+    ],
+    documentos: [
+      {
+        id: 'd1',
+        tipo: 'edital',
+        titulo: 'Edital INSS 2023',
+        url: '#',
+        dataCriacao: new Date('2023-05-10'),
+        processado: true
+      },
+      {
+        id: 'd2',
+        tipo: 'prova',
+        titulo: 'Prova Anterior INSS 2022',
+        url: '#',
+        dataCriacao: new Date('2022-12-15'),
+        processado: true
+      }
+    ]
+  },
+  {
+    id: '2',
+    title: 'Concurso TRT 10ª Região',
+    description: 'Concurso para Técnico e Analista Judiciário do TRT da 10ª Região.',
+    thumbnail: '/placeholder.svg',
+    organizacao: 'Tribunal Regional do Trabalho da 10ª Região',
+    dataProva: '22/01/2024',
+    status: 'aberto',
+    materias: [
+      {
+        id: '201',
+        title: 'Direito do Trabalho',
+        description: 'Consolidação das Leis do Trabalho, contratos, rescisões.',
+        questoes: [],
+        progress: 20
+      },
+      {
+        id: '202',
+        title: 'Processo do Trabalho',
+        description: 'Justiça do Trabalho, Ministério Público do Trabalho, processo judiciário.',
+        questoes: [],
+        progress: 15
+      }
+    ],
+    documentos: [
+      {
+        id: 'd3',
+        tipo: 'edital',
+        titulo: 'Edital TRT 10ª Região',
+        url: '#',
+        dataCriacao: new Date('2023-07-20'),
+        processado: true
+      }
+    ]
+  }
+];
 
 const ConcursoDetails = () => {
   const { id } = useParams<{ id: string }>();
-  const [concurso, setConcurso] = useState<Concurso | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const { isAuthenticated } = useAuth();
-
-  useEffect(() => {
-    // Simular carregamento
-    const timer = setTimeout(() => {
-      const foundConcurso = mockConcursos.find(c => c.id === id) || null;
-      setConcurso(foundConcurso);
-      setIsLoading(false);
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, [id]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <main className="container pt-24 pb-16">
-          <div className="flex items-center justify-center h-[70vh]">
-            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
+  const [activeTab, setActiveTab] = useState("visao-geral");
+  const { toast } = useToast();
+  
+  // Find the concurso with the matching id
+  const concurso = mockConcursos.find(c => c.id === id);
+  
   if (!concurso) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <main className="container pt-24 pb-16">
-          <div className="flex flex-col items-center justify-center h-[70vh] space-y-4">
-            <AlertCircle className="h-16 w-16 text-muted-foreground" />
-            <h2 className="text-2xl font-bold">Concurso não encontrado</h2>
-            <p className="text-muted-foreground">O concurso que você está procurando não existe ou foi removido.</p>
-            <Button asChild>
-              <Link to="/concursos">Voltar para Concursos</Link>
-            </Button>
-          </div>
-        </main>
+      <div className="container mx-auto p-4 text-center">
+        <h1 className="text-2xl font-bold mb-4">Concurso não encontrado</h1>
+        <Link to="/concursos">
+          <Button>Voltar para Concursos</Button>
+        </Link>
       </div>
     );
   }
 
-  const progressoGeral = concurso.materias.reduce(
-    (acc, materia) => acc + (materia.progress || 0), 0
-  ) / concurso.materias.length;
+  const handleStartPractice = (materiaId: string) => {
+    toast({
+      title: "Modo Prática Iniciado",
+      description: `Iniciando prática para ${concurso.materias.find(m => m.id === materiaId)?.title}`,
+    });
+  };
+
+  const handleDownload = (documentoId: string) => {
+    toast({
+      title: "Download Iniciado",
+      description: `Baixando ${concurso.documentos.find(d => d.id === documentoId)?.titulo}`,
+    });
+  };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      
-      <main className="container pt-24 pb-16">
-        <div className="mb-6">
-          <Link 
-            to="/concursos" 
-            className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground"
-          >
-            <ChevronLeft className="mr-1 h-4 w-4" />
-            Voltar para Concursos
-          </Link>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="md:col-span-2 space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight">{concurso.title}</h1>
-                <p className="text-muted-foreground mt-1">{concurso.description}</p>
-              </div>
-              <Badge 
-                className="self-start md:self-auto" 
-                variant={
-                  concurso.status === 'aberto' ? 'default' :
-                  concurso.status === 'encerrado' ? 'secondary' : 'outline'
-                }
-              >
-                {concurso.status === 'aberto' ? 'Aberto' : 
-                 concurso.status === 'encerrado' ? 'Encerrado' : 'Previsto'}
-              </Badge>
-            </div>
-            
-            <div className="flex flex-wrap gap-6">
-              <div className="flex items-center">
-                <FileText className="h-5 w-5 mr-2 text-muted-foreground" />
-                <span>{concurso.organizacao}</span>
-              </div>
-              {concurso.dataProva && (
-                <div className="flex items-center">
-                  <Calendar className="h-5 w-5 mr-2 text-muted-foreground" />
-                  <span>Data da prova: {concurso.dataProva}</span>
-                </div>
-              )}
-              <div className="flex items-center">
-                <BookOpen className="h-5 w-5 mr-2 text-muted-foreground" />
-                <span>{concurso.materias.length} Matérias</span>
-              </div>
-            </div>
-            
-            {isAuthenticated && (
-              <div className="p-4 bg-muted rounded-lg">
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-medium">Seu progresso neste concurso</h3>
-                  <span className="text-sm font-medium">{Math.round(progressoGeral)}%</span>
-                </div>
-                <Progress value={progressoGeral} className="h-2" />
-              </div>
-            )}
-
-            <Tabs defaultValue="materias" className="mt-6">
-              <TabsList>
-                <TabsTrigger value="materias">Matérias</TabsTrigger>
-                <TabsTrigger value="documentos">Documentos</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="materias" className="mt-4">
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold">Matérias do Concurso</h2>
-                  
-                  <div className="grid grid-cols-1 gap-4">
-                    {concurso.materias.map((materia, index) => (
-                      <MateriaCard key={materia.id} materia={materia} index={index} />
-                    ))}
-                  </div>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="documentos" className="mt-4">
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold">Documentos do Concurso</h2>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {concurso.documentos.map((doc) => (
-                      <Card key={doc.id} className="overflow-hidden">
-                        <CardHeader className="p-4 pb-2">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <CardTitle className="text-base">{doc.titulo}</CardTitle>
-                              <CardDescription className="text-xs mt-1">
-                                Adicionado em {doc.dataCriacao.toLocaleDateString()}
-                              </CardDescription>
-                            </div>
-                            <Badge variant={doc.processado ? "default" : "outline"}>
-                              {doc.tipo === 'edital' ? 'Edital' :
-                               doc.tipo === 'prova' ? 'Prova' :
-                               doc.tipo === 'gabarito' ? 'Gabarito' : 'Outro'}
-                            </Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="p-4 pt-2">
-                          <div className="flex justify-between items-center">
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <Clock className="h-4 w-4 mr-1" />
-                              {doc.processado ? 'Processado' : 'Não processado'}
-                            </div>
-                            <Button variant="outline" size="sm" className="gap-1">
-                              <Download className="h-4 w-4" />
-                              <span>Download</span>
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
+    <div className="container mx-auto p-4">
+      <div className="mb-8">
+        <Link to="/concursos" className="flex items-center text-primary hover:underline mb-2">
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Voltar para Concursos
+        </Link>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">{concurso.title}</h1>
+            <p className="text-muted-foreground">{concurso.organizacao}</p>
           </div>
-          
-          <div className="space-y-6">
-            <Card>
+          {concurso.status === 'aberto' && (
+            <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+              Inscrições Abertas
+            </div>
+          )}
+          {concurso.status === 'encerrado' && (
+            <div className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+              Inscrições Encerradas
+            </div>
+          )}
+          {concurso.status === 'previsto' && (
+            <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+              Previsão de Edital
+            </div>
+          )}
+        </div>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid grid-cols-3 mb-8">
+          <TabsTrigger value="visao-geral">Visão Geral</TabsTrigger>
+          <TabsTrigger value="materias">Matérias</TabsTrigger>
+          <TabsTrigger value="documentos">Documentos</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="visao-geral">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="md:col-span-2">
               <CardHeader>
-                <CardTitle>Informações do Concurso</CardTitle>
+                <CardTitle>Sobre o Concurso</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Organização</h3>
-                  <p>{concurso.organizacao}</p>
-                </div>
+              <CardContent>
+                <p className="mb-4">{concurso.description}</p>
                 
                 {concurso.dataProva && (
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Data da Prova</h3>
+                  <div className="mb-4">
+                    <h3 className="font-semibold">Data da Prova:</h3>
                     <p>{concurso.dataProva}</p>
                   </div>
                 )}
                 
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Status</h3>
-                  <Badge 
-                    variant={
-                      concurso.status === 'aberto' ? 'default' :
-                      concurso.status === 'encerrado' ? 'secondary' : 'outline'
-                    }
-                  >
-                    {concurso.status === 'aberto' ? 'Aberto' : 
-                     concurso.status === 'encerrado' ? 'Encerrado' : 'Previsto'}
-                  </Badge>
+                <div className="mb-4">
+                  <h3 className="font-semibold">Status:</h3>
+                  <p className="capitalize">{concurso.status.replace('-', ' ')}</p>
                 </div>
                 
-                <Separator />
-                
-                <div className="pt-2">
-                  <Button className="w-full" asChild>
-                    <Link to="/aichat">
-                      <MessageSquare className="mr-2 h-4 w-4" />
-                      Tire dúvidas com IA
-                    </Link>
-                  </Button>
+                <div className="mb-4">
+                  <h3 className="font-semibold">Organização:</h3>
+                  <p>{concurso.organizacao}</p>
                 </div>
               </CardContent>
             </Card>
             
-            {concurso.documentos.length > 0 && (
-              <Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Recursos</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button className="w-full flex items-center justify-center gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  Resumos da Banca
+                </Button>
+                
+                <Button className="w-full flex items-center justify-center gap-2" variant="outline">
+                  <MessageCircle className="h-4 w-4" />
+                  Perguntar à IA
+                </Button>
+                
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button className="w-full flex items-center justify-center gap-2" variant="outline">
+                      <FileText className="h-4 w-4" />
+                      Visualizar Edital
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Edital do Concurso</DialogTitle>
+                    </DialogHeader>
+                    <div className="max-h-[60vh] overflow-y-auto">
+                      <div className="p-4 border rounded">
+                        <p className="text-center text-muted-foreground">
+                          Visualização do edital indisponível. Baixe o arquivo para visualizar.
+                        </p>
+                      </div>
+                    </div>
+                    <Button className="mt-4 w-full flex items-center justify-center gap-2">
+                      <Download className="h-4 w-4" />
+                      Baixar Edital
+                    </Button>
+                  </DialogContent>
+                </Dialog>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="materias">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {concurso.materias.map((materia) => (
+              <Card key={materia.id}>
                 <CardHeader>
-                  <CardTitle>Documentos Disponíveis</CardTitle>
+                  <CardTitle>{materia.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ul className="space-y-2">
-                    {concurso.documentos.map((doc) => (
-                      <li key={doc.id} className="flex justify-between items-center">
-                        <div className="flex items-center">
-                          <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <span className="text-sm">{doc.titulo}</span>
-                        </div>
-                        <Button variant="ghost" size="icon">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
+                  <p className="mb-4 text-sm text-muted-foreground">{materia.description}</p>
+                  
+                  <div className="mb-4">
+                    <div className="flex justify-between mb-1 text-sm">
+                      <span>Seu progresso</span>
+                      <span>{materia.progress || 0}%</span>
+                    </div>
+                    <Progress value={materia.progress || 0} />
+                  </div>
+                  
+                  <div className="flex space-x-2">
+                    <Button
+                      className="flex-1"
+                      onClick={() => handleStartPractice(materia.id)}
+                    >
+                      Praticar
+                    </Button>
+                    <Button variant="outline" className="flex-1">
+                      Conteúdo
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
-            )}
+            ))}
           </div>
-        </div>
-      </main>
-    </div>
-  );
-};
+        </TabsContent>
 
-const MateriaCard = ({ materia, index }: { materia: ConcursoMateria, index: number }) => {
-  const progress = materia.progress || 0;
-  
-  return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow">
-      <CardHeader className="p-4 pb-2">
-        <div className="flex justify-between">
-          <div>
-            <CardTitle className="flex items-start gap-2">
-              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-muted text-foreground text-xs font-medium">
-                {index + 1}
-              </div>
-              <span>{materia.title}</span>
-            </CardTitle>
-            <CardDescription>{materia.description}</CardDescription>
+        <TabsContent value="documentos">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {concurso.documentos.map((documento) => (
+              <Card key={documento.id}>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <FileText className="h-5 w-5 mr-2" />
+                    {documento.titulo}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="mb-2 text-sm text-muted-foreground">
+                    Tipo: <span className="capitalize">{documento.tipo}</span>
+                  </p>
+                  <p className="mb-4 text-sm text-muted-foreground">
+                    Adicionado em: {documento.dataCriacao.toLocaleDateString()}
+                  </p>
+                  
+                  <div className="flex space-x-2">
+                    <Button
+                      className="flex-1 flex items-center justify-center gap-2"
+                      onClick={() => handleDownload(documento.id)}
+                    >
+                      <Download className="h-4 w-4" />
+                      Baixar
+                    </Button>
+                    <Button variant="outline" className="flex-1">
+                      Visualizar
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-          {progress === 100 && (
-            <div className="rounded-full w-6 h-6 bg-primary/10 flex items-center justify-center">
-              <Check className="h-4 w-4 text-primary" />
-            </div>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="p-4 pt-2">
-        {progress > 0 && (
-          <div className="mt-2 mb-3">
-            <div className="flex justify-between text-xs mb-1">
-              <span>Progresso</span>
-              <span>{progress}%</span>
-            </div>
-            <Progress value={progress} className="h-1.5" />
-          </div>
-        )}
-        <div className="flex justify-between items-center">
-          <span className="text-xs text-muted-foreground">
-            {materia.questoes.length} questões disponíveis
-          </span>
-          <Button size="sm">
-            <BookOpen className="h-4 w-4 mr-2" />
-            Estudar
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 
