@@ -72,3 +72,43 @@ export interface User {
   joinedDate: Date;
   progress: UserProgress;
 }
+
+export interface Concurso {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail: string;
+  organizacao: string;
+  dataProva?: string;
+  status: 'aberto' | 'encerrado' | 'previsto';
+  materias: ConcursoMateria[];
+  documentos: ConcursoDocumento[];
+}
+
+export interface ConcursoMateria {
+  id: string;
+  title: string;
+  description: string;
+  questoes: Question[];
+  progress?: number;
+}
+
+export interface ConcursoDocumento {
+  id: string;
+  tipo: 'edital' | 'prova' | 'gabarito' | 'outro';
+  titulo: string;
+  url: string;
+  dataCriacao: Date;
+  processado: boolean;
+}
+
+export interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  error: string | null;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
+  updateProfile: (data: Partial<User>) => Promise<void>;
+  isAuthenticated: boolean;
+}

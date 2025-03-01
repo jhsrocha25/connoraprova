@@ -1,14 +1,25 @@
 
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, BookOpen, MessageSquare, BarChart, User, LogOut } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, BookOpen, MessageSquare, BarChart, User, LogOut, Settings, FileText, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { mockUser } from '@/lib/data';
+import { useAuth } from '@/contexts/AuthContext';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout, isAuthenticated } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -31,13 +42,23 @@ const Navbar = () => {
     setIsOpen(false);
   };
 
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+    closeMenu();
+  };
+
   const navLinks = [
     { path: '/', label: 'Início', icon: <BookOpen className="h-4 w-4 mr-2" /> },
-    { path: '/courses', label: 'Cursos', icon: <BookOpen className="h-4 w-4 mr-2" /> },
+    { path: '/concursos', label: 'Concursos', icon: <FileText className="h-4 w-4 mr-2" /> },
     { path: '/aichat', label: 'AI Chat', icon: <MessageSquare className="h-4 w-4 mr-2" /> },
     { path: '/progress', label: 'Progresso', icon: <BarChart className="h-4 w-4 mr-2" /> },
-    { path: '/profile', label: 'Perfil', icon: <User className="h-4 w-4 mr-2" /> },
   ];
+
+  // Adicionar links extras para administradores
+  if (user?.role === 'admin') {
+    navLinks.push({ path: '/admin/dashboard', label: 'Admin', icon: <Shield className="h-4 w-4 mr-2" /> });
+  }
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -80,17 +101,47 @@ const Navbar = () => {
           </div>
 
           <div className="hidden md:flex items-center space-x-2">
-            <div className="flex items-center">
-              <img 
-                src={mockUser.avatar} 
-                alt={mockUser.name} 
-                className="h-8 w-8 rounded-full object-cover mr-2 border border-border" 
-              />
-              <span className="text-sm font-medium">{mockUser.name}</span>
-            </div>
-            <Button variant="ghost" size="icon">
-              <LogOut className="h-5 w-5" />
-            </Button>
+            {isAuthenticated ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={user?.avatar} alt={user?.name} />
+                      <AvatarFallback>{user?.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{user?.name}</p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {user?.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/settings')}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Configurações</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sair</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Button variant="ghost" onClick={() => navigate('/login')}>
+                  Entrar
+                </Button>
+                <Button onClick={() => navigate('/register')}>
+                  Cadastrar
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Mobile Navigation Toggle */}
@@ -129,19 +180,45 @@ const Navbar = () => {
               </Link>
             ))}
             <div className="pt-4 border-t border-border mt-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <img 
-                    src={mockUser.avatar} 
-                    alt={mockUser.name} 
-                    className="h-8 w-8 rounded-full object-cover mr-2" 
-                  />
-                  <span className="text-sm font-medium">{mockUser.name}</span>
+              {isAuthenticated ? (
+                <div className="space-y-2">
+                  <div className="flex items-center mb-4">
+                    <Avatar className="h-8 w-8 mr-2">
+                      <AvatarImage src={user?.avatar} alt={user?.name} />
+                      <AvatarFallback>{user?.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-medium">{user?.name}</p>
+                      <p className="text-xs text-muted-foreground">{user?.email}</p>
+                    </div>
+                  </div>
+                  <Link
+                    to="/settings"
+                    className="flex items-center px-4 py-3 rounded-md text-base font-medium"
+                    onClick={closeMenu}
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    <span>Configurações</span>
+                  </Link>
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-start" 
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    <span>Sair</span>
+                  </Button>
                 </div>
-                <Button variant="ghost" size="icon">
-                  <LogOut className="h-5 w-5" />
-                </Button>
-              </div>
+              ) : (
+                <div className="flex flex-col space-y-2">
+                  <Button variant="outline" onClick={() => { navigate('/login'); closeMenu(); }}>
+                    Entrar
+                  </Button>
+                  <Button onClick={() => { navigate('/register'); closeMenu(); }}>
+                    Cadastrar
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
