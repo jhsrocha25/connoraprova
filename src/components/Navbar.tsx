@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, BookOpen, MessageSquare, BarChart, User, LogOut, Settings, FileText, Shield } from 'lucide-react';
+import { Menu, X, BookOpen, MessageSquare, BarChart, User, LogOut, Settings, FileText, Shield, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -55,7 +54,6 @@ const Navbar = () => {
     { path: '/progress', label: 'Progresso', icon: <BarChart className="h-4 w-4 mr-2" /> },
   ];
 
-  // Adicionar links extras para administradores
   if (user?.role === 'admin') {
     navLinks.push({ path: '/admin/dashboard', label: 'Admin', icon: <Shield className="h-4 w-4 mr-2" /> });
   }
@@ -65,22 +63,14 @@ const Navbar = () => {
   };
 
   return (
-    <nav 
-      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
-        scrolled ? 'bg-white/80 shadow-sm backdrop-blur-md' : 'bg-white/0'
-      }`}
-    >
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
-          <Link 
-            to="/" 
-            className="text-xl font-semibold tracking-tight transition-opacity hover:opacity-80"
-            onClick={closeMenu}
-          >
-            QuizMentor
+    <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b">
+      <div className="container mx-auto px-4 flex h-16 items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2">
+            <GraduationCap className="h-6 w-6 text-primary" />
+            <span className="font-bold text-xl hidden md:inline-block">Connor Aprova</span>
           </Link>
 
-          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">
             {navLinks.map((link) => (
               <Link
@@ -144,7 +134,6 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile Navigation Toggle */}
           <div className="md:hidden">
             <Button 
               variant="ghost" 
@@ -158,7 +147,6 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile Navigation Menu */}
       {isOpen && (
         <div className="md:hidden absolute top-16 left-0 right-0 bg-white/95 backdrop-blur-md shadow-lg animate-slide-down">
           <div className="flex flex-col p-4 space-y-2">
@@ -223,7 +211,7 @@ const Navbar = () => {
           </div>
         </div>
       )}
-    </nav>
+    </header>
   );
 };
 
