@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -932,7 +931,7 @@ const Courses = () => {
                   <div className="space-y-2">
                     {mockCourses[0].modules.map((module, index) => (
                       <div key={index} className="flex items-center justify-between rounded-md border p-3">
-                        <span className="text-sm">{module}</span>
+                        <span className="text-sm">{module.title}</span>
                       </div>
                     ))}
                   </div>
