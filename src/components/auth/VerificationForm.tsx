@@ -21,18 +21,20 @@ const VerificationForm = ({
   error 
 }: VerificationFormProps) => {
   return (
-    <form onSubmit={onSubmit}>
-      <div className="space-y-2">
-        <Label htmlFor="verificationCode">Código de Verificação</Label>
+    <form onSubmit={onSubmit} className="w-full">
+      <div className="space-y-3">
+        <Label htmlFor="verificationCode" className="text-sm md:text-base">Código de Verificação</Label>
         <div className="relative">
           <KeyRound className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             id="verificationCode"
             type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             placeholder="Digite o código de 6 dígitos"
             value={verificationCode}
             onChange={(e) => setVerificationCode(e.target.value)}
-            className="pl-10"
+            className="pl-10 text-base md:text-sm h-12 md:h-10"
             maxLength={6}
             required
           />
@@ -42,13 +44,13 @@ const VerificationForm = ({
         </p>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-6">
         <Button 
           type="submit" 
-          className="w-full" 
+          className="w-full h-12 md:h-10 text-base md:text-sm" 
           disabled={loading}
         >
-          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {loading && <Loader2 className="mr-2 h-5 w-5 md:h-4 md:w-4 animate-spin" />}
           Verificar
         </Button>
       </div>
