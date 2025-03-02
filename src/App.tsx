@@ -16,6 +16,7 @@ import UserSettings from "./pages/UserSettings";
 import AdminDashboard from "./pages/AdminDashboard";
 import Courses from "./pages/Courses";
 import { AuthProvider } from "./contexts/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -30,12 +31,40 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/concursos" element={<Concursos />} />
             <Route path="/concursos/:id" element={<ConcursoDetails />} />
-            <Route path="/progress" element={<Progress />} />
-            <Route path="/aichat" element={<AIChat />} />
+            <Route 
+              path="/progress" 
+              element={
+                <ProtectedRoute>
+                  <Progress />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/aichat" 
+              element={
+                <ProtectedRoute>
+                  <AIChat />
+                </ProtectedRoute>
+              } 
+            />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/settings" element={<UserSettings />} />
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route 
+              path="/settings" 
+              element={
+                <ProtectedRoute>
+                  <UserSettings />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/dashboard" 
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
             <Route path="/courses" element={<Courses />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

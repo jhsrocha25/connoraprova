@@ -1,4 +1,3 @@
-
 export interface Course {
   id: string;
   title: string;
@@ -102,7 +101,7 @@ export interface ConcursoDocumento {
   processado: boolean;
 }
 
-export interface AuthContextType {
+export type AuthContextType = {
   user: User | null;
   loading: boolean;
   error: string | null;
@@ -111,4 +110,6 @@ export interface AuthContextType {
   register: (name: string, email: string, password: string) => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
   isAuthenticated: boolean;
-}
+  twoFactorPending?: boolean;
+  verifyLoginCode?: (code: string) => Promise<boolean>;
+};
