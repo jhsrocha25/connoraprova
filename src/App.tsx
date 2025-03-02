@@ -14,6 +14,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import UserSettings from "./pages/UserSettings";
 import AdminDashboard from "./pages/AdminDashboard";
+import Courses from "./pages/Courses";
 import { AuthProvider } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/settings" element={<UserSettings />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/courses" element={<Courses />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
