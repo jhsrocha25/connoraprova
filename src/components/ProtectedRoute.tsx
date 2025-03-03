@@ -11,7 +11,7 @@ type ProtectedRouteProps = {
 };
 
 const ProtectedRoute = ({ children, allowedRoles, bypassForAdmin = false }: ProtectedRouteProps) => {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading, isAuthenticated, twoFactorPending } = useAuth();
   const location = useLocation();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
@@ -60,6 +60,11 @@ const ProtectedRoute = ({ children, allowedRoles, bypassForAdmin = false }: Prot
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
+  }
+
+  // If two-factor authentication is pending, redirect to register page to complete verification
+  if (twoFactorPending) {
+    return <Navigate to="/register" state={{ from: location }} replace />;
   }
 
   if (!isAuthorized) {

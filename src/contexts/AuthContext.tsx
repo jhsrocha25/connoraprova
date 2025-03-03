@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { User, AuthContextType } from '@/lib/types';
 import { mockUser } from '@/lib/data';
@@ -189,6 +188,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [needsVerification, setNeedsVerification] = useState(false);
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null);
   const [twoFactorPending, setTwoFactorPending] = useState(false);
+  const [pendingUserData, setPendingUserData] = useState<{name: string, email: string} | null>(null);
 
   useEffect(() => {
     // Generate a device ID for this browser session
@@ -218,9 +218,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setPendingVerificationEmail(email);
     setTwoFactorPending(true);
     
+    // Simulação de envio de e-mail (em um ambiente real, aqui seria integrado com um serviço de e-mail)
+    // Por exemplo: await emailService.send(email, 'Código de verificação', `Seu código é: ${code}`);
+    
+    // Em um ambiente de desenvolvimento, vamos simular o envio mostrando o código para facilitar os testes
     toast({
       title: "Código de verificação enviado",
-      description: `Um código de verificação foi enviado para ${email}. Por favor, verifique seu email.`,
+      description: `Um código de verificação foi enviado para ${email}. Para fins de teste, o código é: ${code}`,
     });
   };
   
@@ -240,14 +244,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       addKnownDevice(pendingVerificationEmail, deviceId, '127.0.0.1'); // In a real app, you'd get the actual IP
       
       setTwoFactorPending(false);
-      setPendingVerificationEmail(null);
       
       // Complete the login with mockUser for demo purposes
       if (pendingVerificationEmail === mockUser.email) {
         setUser(mockUser);
         localStorage.setItem('user', JSON.stringify(mockUser));
+      } else if (pendingUserData) {
+        // Create a new user based on the pending registration data
+        const newUser: User = {
+          ...mockUser,
+          id: Math.random().toString(36).substring(2, 9),
+          name: pendingUserData.name,
+          email: pendingUserData.email,
+          joinedDate: new Date(),
+        };
+        
+        setUser(newUser);
+        localStorage.setItem('user', JSON.stringify(newUser));
+        setPendingUserData(null);
       }
       
+      setPendingVerificationEmail(null);
       return true;
     } else {
       toast({
@@ -349,16 +366,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Simulating a registration request
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Create a new user based on mockUser
-      const newUser: User = {
-        ...mockUser,
-        id: Math.random().toString(36).substring(2, 9),
-        name,
-        email,
-        joinedDate: new Date(),
-      };
+      // Store pending user data for completion after verification
+      setPendingUserData({ name, email });
       
-      // Send verification code for 2FA
+      // Always send verification code for registration - mandatory 2FA
       await sendVerificationCode(email);
       
       // The actual user creation will be completed after 2FA verification
