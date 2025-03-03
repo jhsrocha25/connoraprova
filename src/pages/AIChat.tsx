@@ -8,16 +8,19 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar } from '@/components/ui/avatar';
-import { MessageSquare, Send, Sparkles, Clock, BookOpen, FileText, Lightbulb, Search, ChevronRight } from 'lucide-react';
+import { MessageSquare, Send, Sparkles, Clock, BookOpen, FileText, Lightbulb, Search, ChevronRight, RotateCw } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { mockUser } from '@/lib/data';
 import QuestionGenerator from '@/components/QuestionGenerator';
+import { Question } from '@/lib/types';
+import { generateAIResponse } from '@/lib/aiService';
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  questions?: Question[];
 }
 
 interface QuestionExample {
@@ -75,6 +78,7 @@ const AIChat = () => {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [showQuestionGenerator, setShowQuestionGenerator] = useState(false);
   const [generatorPrompt, setGeneratorPrompt] = useState('');
+  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
 
   // Auto scroll to bottom of messages
   useEffect(() => {
@@ -103,31 +107,38 @@ const AIChat = () => {
     setInput('');
     setIsLoading(true);
     
-    // Simulate AI response after a delay
-    setTimeout(() => {
+    try {
+      // Get response from AI service
+      const aiResponse = await generateAIResponse(input);
+      
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: simulateAIResponse(input),
+        content: aiResponse.text,
         timestamp: new Date(),
+        questions: aiResponse.questions,
       };
       
       setMessages(prev => [...prev, assistantMessage]);
+      
+      // If there's only one question, set it as the current question
+      if (aiResponse.questions && aiResponse.questions.length === 1) {
+        setCurrentQuestion(aiResponse.questions[0]);
+      }
+    } catch (error) {
+      console.error('Error generating AI response:', error);
+      
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: 'Desculpe, ocorreu um erro ao processar sua solicitação. Por favor, tente novamente.',
+        timestamp: new Date(),
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
-  };
-
-  const simulateAIResponse = (userInput: string): string => {
-    // Very simple simulation of AI response
-    if (userInput.toLowerCase().includes('questão') || userInput.toLowerCase().includes('pergunta')) {
-      return 'Aqui está uma questão para você praticar:\n\nDe acordo com a Constituição Federal, são poderes da União, independentes e harmônicos entre si:\n\nA) O Legislativo, o Executivo e o Judiciário.\nB) O Federal, o Estadual e o Municipal.\nC) O Presidencial, o Parlamentar e o Monárquico.\nD) O Central, o Regional e o Local.\n\nA resposta correta é a alternativa A. A Constituição Federal, em seu artigo 2º, estabelece que "São Poderes da União, independentes e harmônicos entre si, o Legislativo, o Executivo e o Judiciário."';
     }
-    
-    if (userInput.toLowerCase().includes('ajuda') || userInput.toLowerCase().includes('como')) {
-      return 'Posso te ajudar com:\n\n- Gerar questões de concursos sobre diversos temas\n- Explicar conceitos jurídicos, administrativos e de outras áreas\n- Criar resumos sobre tópicos específicos\n- Oferecer dicas de estudo\n\nBasta me dizer o que você precisa!';
-    }
-    
-    return 'Como assistente de estudos para concursos, posso ajudar com questões, explicações e resumos sobre diversos temas. O que você gostaria de praticar hoje?';
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -140,6 +151,31 @@ const AIChat = () => {
   const startQuestionGenerator = (prompt: string = '') => {
     setGeneratorPrompt(prompt);
     setShowQuestionGenerator(true);
+  };
+
+  const handleAnswerQuestion = (questionId: string, answerId: string) => {
+    const question = messages
+      .flatMap(msg => msg.questions || [])
+      .find(q => q.id === questionId);
+    
+    if (!question) return;
+    
+    const selectedOption = question.options.find(opt => opt.id === answerId);
+    const isCorrect = selectedOption?.isCorrect || false;
+    
+    const content = isCorrect 
+      ? `✓ Correto! ${question.explanation}`
+      : `✗ Incorreto. A resposta correta é a alternativa ${question.options.find(opt => opt.isCorrect)?.id.toUpperCase()}. ${question.explanation}`;
+    
+    const assistantMessage: Message = {
+      id: Date.now().toString(),
+      role: 'assistant',
+      content,
+      timestamp: new Date(),
+    };
+    
+    setMessages(prev => [...prev, assistantMessage]);
+    setCurrentQuestion(null);
   };
 
   const formatMessage = (content: string) => {
@@ -175,7 +211,7 @@ const AIChat = () => {
                 <span>Voltar para o chat</span>
               </Button>
             </div>
-            <QuestionGenerator />
+            <QuestionGenerator initialPrompt={generatorPrompt} />
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -232,31 +268,72 @@ const AIChat = () => {
                       ) : (
                         <div className="space-y-4">
                           {messages.map((message) => (
-                            <div 
-                              key={message.id} 
-                              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                            >
+                            <div key={message.id}>
                               <div 
-                                className={`max-w-[80%] rounded-lg p-4 ${
-                                  message.role === 'user'
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-muted'
-                                }`}
+                                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                               >
-                                <div className="flex items-center mb-2">
-                                  {message.role === 'assistant' && (
-                                    <Avatar className="h-6 w-6 mr-2">
-                                      <Sparkles className="h-4 w-4" />
-                                    </Avatar>
-                                  )}
-                                  <span className="text-xs opacity-70">
-                                    {message.role === 'user' ? 'Você' : 'Assistente'} • {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                  </span>
-                                </div>
-                                <div className="text-sm whitespace-pre-line">
-                                  {formatMessage(message.content)}
+                                <div 
+                                  className={`max-w-[80%] rounded-lg p-4 ${
+                                    message.role === 'user'
+                                      ? 'bg-primary text-primary-foreground'
+                                      : 'bg-muted'
+                                  }`}
+                                >
+                                  <div className="flex items-center mb-2">
+                                    {message.role === 'assistant' && (
+                                      <Avatar className="h-6 w-6 mr-2">
+                                        <Sparkles className="h-4 w-4" />
+                                      </Avatar>
+                                    )}
+                                    <span className="text-xs opacity-70">
+                                      {message.role === 'user' ? 'Você' : 'Assistente'} • {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                  </div>
+                                  <div className="text-sm whitespace-pre-line">
+                                    {formatMessage(message.content)}
+                                  </div>
                                 </div>
                               </div>
+                              
+                              {/* Display questions if they exist */}
+                              {message.questions && message.questions.length > 0 && (
+                                <div className="mt-3 mb-6 pl-12">
+                                  {message.questions.map((question) => (
+                                    <Card key={question.id} className="mb-4 border shadow-sm">
+                                      <CardHeader className="p-4 pb-2">
+                                        <div className="flex justify-between items-start mb-2">
+                                          <Badge className="bg-primary/10 text-primary hover:bg-primary/20 mb-2">
+                                            {question.category}
+                                          </Badge>
+                                          <Badge variant="outline">
+                                            {question.difficulty === 'easy' ? 'Fácil' : 
+                                             question.difficulty === 'medium' ? 'Médio' : 'Difícil'}
+                                          </Badge>
+                                        </div>
+                                        <CardTitle className="text-base font-medium">
+                                          {question.question}
+                                        </CardTitle>
+                                      </CardHeader>
+                                      <CardContent className="p-4 pt-2">
+                                        <div className="space-y-2">
+                                          {question.options.map((option) => (
+                                            <div
+                                              key={option.id}
+                                              className="flex items-center space-x-2 rounded-md border p-2 cursor-pointer hover:bg-muted/50 transition-colors"
+                                              onClick={() => handleAnswerQuestion(question.id, option.id)}
+                                            >
+                                              <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full border text-xs font-medium">
+                                                {option.id.toUpperCase()}
+                                              </div>
+                                              <div className="text-sm">{option.text}</div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           ))}
                           {isLoading && (
@@ -300,7 +377,7 @@ const AIChat = () => {
                         className="h-10 w-10"
                         disabled={isLoading || !input.trim()}
                       >
-                        <Send className="h-4 w-4" />
+                        {isLoading ? <RotateCw className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                       </Button>
                     </div>
                   </CardFooter>

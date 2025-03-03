@@ -171,7 +171,7 @@ const Index = () => {
                 </TabsList>
                 <Link 
                   to="/courses" 
-                  className="text-sm font-medium text-primary hover:underline flex items-center px-2 py-1"
+                  className="text-sm font-medium text-primary hover:underline flex items-center bg-transparent py-2 px-3 border border-transparent rounded-md hover:bg-primary/5 transition-colors"
                 >
                   Ver todos
                   <svg
@@ -292,9 +292,15 @@ const Index = () => {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button variant="outline" className="w-full h-12 md:h-10 text-base md:text-sm">
-                    <Clock className="h-4 w-4 mr-2" />
-                    Iniciar Simulado
+                  <Button 
+                    variant="outline" 
+                    className="w-full h-12 md:h-10 text-base md:text-sm"
+                    asChild
+                  >
+                    <Link to="/aichat">
+                      <Clock className="h-4 w-4 mr-2" />
+                      Iniciar Simulado
+                    </Link>
                   </Button>
                 </CardFooter>
               </Card>

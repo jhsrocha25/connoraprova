@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Question } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -23,7 +24,6 @@ import {
   Play, 
   AlertTriangle 
 } from 'lucide-react';
-import { mockQuestions } from '@/lib/data';
 import { 
   Dialog,
   DialogContent,
@@ -31,9 +31,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { generateAIResponse, generateSimulation, SimulationParameters } from '@/lib/aiService';
 
 const getDifficultyColor = (difficulty: string) => {
   switch (difficulty) {
@@ -200,8 +200,12 @@ const QuestionComponent = ({
   );
 };
 
-const QuestionGenerator = () => {
-  const [userPrompt, setUserPrompt] = useState('');
+interface QuestionGeneratorProps {
+  initialPrompt?: string;
+}
+
+const QuestionGenerator: React.FC<QuestionGeneratorProps> = ({ initialPrompt = '' }) => {
+  const [userPrompt, setUserPrompt] = useState(initialPrompt);
   const [isLoading, setIsLoading] = useState(false);
   const [currentQuestions, setCurrentQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -213,7 +217,7 @@ const QuestionGenerator = () => {
     timestamp: Date;
   }[]>([]);
   
-  // New state for simulation mode
+  // State for simulation mode
   const [isSimulatedMode, setIsSimulatedMode] = useState(false);
   const [totalTime, setTotalTime] = useState(0);
   const [timePerQuestion, setTimePerQuestion] = useState(120); // Default 2 minutes per question
@@ -227,6 +231,17 @@ const QuestionGenerator = () => {
     suggestedTopics: string[];
   } | null>(null);
 
+  // For simulation parameters
+  const [simulationTopics, setSimulationTopics] = useState<string[]>([
+    'Direito Constitucional',
+    'Direito Administrativo',
+    'Português',
+    'Raciocínio Lógico',
+    'Informática'
+  ]);
+  const [simulationDifficulty, setSimulationDifficulty] = useState<'easy' | 'medium' | 'hard' | 'mixed'>('mixed');
+  const [simulationNumQuestions, setSimulationNumQuestions] = useState(10);
+
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -234,6 +249,14 @@ const QuestionGenerator = () => {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [chatHistory]);
+
+  // If initial prompt is provided, generate questions automatically
+  useEffect(() => {
+    if (initialPrompt) {
+      setUserPrompt(initialPrompt);
+      generateQuestions();
+    }
+  }, [initialPrompt]);
 
   const generateQuestions = async (isSimulation = false) => {
     if (!userPrompt.trim() && !isSimulation) {
@@ -252,98 +275,81 @@ const QuestionGenerator = () => {
         ...prev,
         { role: 'user', content: userPrompt, timestamp: new Date() }
       ]);
-    }
-
-    // Determine number of questions based on mode
-    const numQuestions = isSimulation ? 10 : 5;
-    const promptToUse = isSimulation ? "simulado completo" : userPrompt;
-
-    // Simulate API call with setTimeout
-    setTimeout(() => {
-      // Generate questions based on mode
-      let newQuestions: Question[] = [];
       
-      if (isSimulation) {
-        // For simulation, create 10 questions with different categories
-        const categories = ["Português", "Matemática", "Direito Constitucional", "Direito Administrativo", "Informática"];
-        const difficulties = ["easy", "medium", "hard"] as const;
+      try {
+        // Get AI response for regular questions
+        const aiResponse = await generateAIResponse(userPrompt);
         
-        for (let i = 0; i < numQuestions; i++) {
-          const category = categories[i % categories.length];
-          const difficulty = difficulties[Math.floor(Math.random() * difficulties.length)];
+        if (aiResponse.questions && aiResponse.questions.length > 0) {
+          setCurrentQuestions(aiResponse.questions);
+          setCurrentQuestionIndex(0);
+          setAnsweredQuestions(new Map());
+          setRevealedQuestions(new Set());
+          setIsSimulatedMode(false);
           
-          newQuestions.push({
-            id: `sim-${Date.now()}-${i}`,
-            question: `Questão ${i+1} de ${category}: ${promptToUse}`,
-            options: [
-              { id: 'a', text: 'Primeira alternativa', isCorrect: Math.random() > 0.8 },
-              { id: 'b', text: 'Segunda alternativa', isCorrect: Math.random() > 0.8 && !newQuestions[newQuestions.length-1]?.options[0].isCorrect },
-              { id: 'c', text: 'Terceira alternativa', isCorrect: Math.random() > 0.8 && !newQuestions[newQuestions.length-1]?.options.some(o => o.isCorrect) },
-              { id: 'd', text: 'Quarta alternativa', isCorrect: Math.random() > 0.8 && !newQuestions[newQuestions.length-1]?.options.some(o => o.isCorrect) },
-              { id: 'e', text: 'Quinta alternativa', isCorrect: !newQuestions[newQuestions.length-1]?.options.some(o => o.isCorrect) },
-            ],
-            explanation: `Esta é uma explicação sobre a questão de ${category}.`,
-            difficulty: difficulty,
-            category: category
+          setChatHistory(prev => [
+            ...prev,
+            { 
+              role: 'assistant', 
+              content: aiResponse.text, 
+              timestamp: new Date() 
+            }
+          ]);
+        } else {
+          toast({
+            title: "Sem questões geradas",
+            description: "Tente um tema mais específico.",
+            variant: "destructive"
           });
-          
-          // Make sure exactly one option is correct
-          const question = newQuestions[newQuestions.length-1];
-          if (!question.options.some(o => o.isCorrect)) {
-            const randomIndex = Math.floor(Math.random() * question.options.length);
-            question.options[randomIndex].isCorrect = true;
-          }
         }
-      } else {
-        // For regular mode, add mock questions + generate some dynamic ones
-        const generatedQuestion: Question = {
-          id: `gen-${Date.now()}`,
-          question: `Questão sobre ${userPrompt} gerada pela IA`,
-          options: [
-            { id: 'a', text: 'Primeira alternativa', isCorrect: false },
-            { id: 'b', text: 'Segunda alternativa', isCorrect: true },
-            { id: 'c', text: 'Terceira alternativa', isCorrect: false },
-            { id: 'd', text: 'Quarta alternativa', isCorrect: false },
-            { id: 'e', text: 'Quinta alternativa', isCorrect: false },
-          ],
-          explanation: `Esta é uma explicação sobre ${userPrompt} gerada pela IA. A resposta correta é a alternativa B porque demonstra o conceito corretamente.`,
-          difficulty: 'medium',
-          category: userPrompt
-        };
-
-        // Combine with mock questions for demonstration
-        newQuestions = [...mockQuestions, generatedQuestion];
+      } catch (error) {
+        console.error('Error generating questions:', error);
+        toast({
+          title: "Erro ao gerar questões",
+          description: "Por favor, tente novamente.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+        setUserPrompt('');
       }
-
-      setCurrentQuestions(newQuestions);
-      setCurrentQuestionIndex(0);
-      setAnsweredQuestions(new Map());
-      setRevealedQuestions(new Set());
-      setIsSimulatedMode(isSimulation);
-      
-      if (isSimulation) {
-        // Calculate total time for all questions (2 mins per question by default)
-        const total = newQuestions.length * timePerQuestion;
+    } else {
+      // Generate simulation
+      try {
+        const params: SimulationParameters = {
+          topics: simulationTopics,
+          difficulty: simulationDifficulty,
+          timePerQuestion,
+          numberOfQuestions: simulationNumQuestions
+        };
+        
+        const questions = await generateSimulation(params);
+        
+        setCurrentQuestions(questions);
+        setCurrentQuestionIndex(0);
+        setAnsweredQuestions(new Map());
+        setRevealedQuestions(new Set());
+        setIsSimulatedMode(true);
+        
+        // Calculate total time for all questions
+        const total = questions.length * timePerQuestion;
         setTotalTime(total);
         
         toast({
           title: "Modo Simulado Ativado",
-          description: `Simulado com ${newQuestions.length} questões iniciado. Tempo total: ${Math.floor(total/60)} minutos.`,
+          description: `Simulado com ${questions.length} questões iniciado. Tempo total: ${Math.floor(total/60)} minutos.`,
         });
-      } else {
-        setChatHistory(prev => [
-          ...prev,
-          { 
-            role: 'assistant', 
-            content: `Aqui estão 5 questões sobre "${userPrompt}". Responda cada uma delas para testar seus conhecimentos.`, 
-            timestamp: new Date() 
-          }
-        ]);
+      } catch (error) {
+        console.error('Error generating simulation:', error);
+        toast({
+          title: "Erro ao gerar simulado",
+          description: "Por favor, tente novamente.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
       }
-
-      setIsLoading(false);
-      setUserPrompt('');
-    }, 1500);
+    }
   };
 
   const handleAnswerSubmit = (answerId: string) => {
@@ -367,7 +373,7 @@ const QuestionGenerator = () => {
             role: 'assistant', 
             content: isCorrect 
               ? `✓ Correto! ${question.explanation}`
-              : `✗ Incorreto. ${question.explanation}`, 
+              : `✗ Incorreto. A resposta correta é a alternativa ${question.options.find(opt => opt.isCorrect)?.id.toUpperCase()}. ${question.explanation}`, 
             timestamp: new Date() 
           }
         ]);
@@ -521,11 +527,11 @@ const QuestionGenerator = () => {
               </div>
             )}
 
-            {chatHistory.length === 0 && !isSimulatedMode && !simulationResults ? (
+            {chatHistory.length === 0 && !isSimulatedMode && !simulationResults && currentQuestions.length === 0 ? (
               <div className="text-center py-8">
-                <h3 className="text-lg font-medium mb-2">Bem-vindo ao AI Chat</h3>
+                <h3 className="text-lg font-medium mb-2">Gerador de Questões</h3>
                 <p className="text-muted-foreground mb-4">
-                  Digite um tema para que a IA gere perguntas de concursos personalizadas para você.
+                  Digite um tema para que a IA gere perguntas de concursos personalizadas para você ou inicie um simulado completo.
                 </p>
                 <div className="flex justify-center gap-4 mt-6">
                   <Button onClick={() => startNewSimulation()} className="flex items-center gap-2 h-12 md:h-10 px-4 text-sm">
@@ -665,7 +671,7 @@ const QuestionGenerator = () => {
 
       {!isSimulatedMode && !simulationResults && (
         <div className="border-t pt-4">
-          <div className="flex items-end space-x-2">
+          <div className="flex items-end gap-2">
             <div className="flex-1">
               <Textarea
                 placeholder="Digite um tema para gerar questões..."
@@ -680,13 +686,15 @@ const QuestionGenerator = () => {
                 }}
               />
             </div>
-            <Button 
-              onClick={() => generateQuestions()} 
-              disabled={isLoading || !userPrompt.trim()}
-              className="h-[60px] px-4 flex-shrink-0"
-            >
-              {isLoading ? <RotateCw className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button 
+                onClick={() => generateQuestions()} 
+                disabled={isLoading || !userPrompt.trim()}
+                className="h-[60px] px-4"
+              >
+                {isLoading ? <RotateCw className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+              </Button>
+            </div>
           </div>
         </div>
       )}
