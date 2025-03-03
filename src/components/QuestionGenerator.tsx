@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Question } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -529,7 +528,7 @@ const QuestionGenerator = () => {
                   Digite um tema para que a IA gere perguntas de concursos personalizadas para você.
                 </p>
                 <div className="flex justify-center gap-4 mt-6">
-                  <Button onClick={() => startNewSimulation()} className="flex items-center gap-2">
+                  <Button onClick={() => startNewSimulation()} className="flex items-center gap-2 h-12 md:h-10 px-4 text-sm">
                     <Clock className="h-4 w-4" />
                     Iniciar Modo Simulado
                   </Button>
@@ -631,6 +630,7 @@ const QuestionGenerator = () => {
                   onClick={goToPreviousQuestion} 
                   disabled={currentQuestionIndex === 0}
                   size="sm"
+                  className="h-10 px-3"
                 >
                   <ChevronUp className="h-4 w-4 mr-1" /> Anterior
                 </Button>
@@ -639,6 +639,7 @@ const QuestionGenerator = () => {
                   onClick={goToNextQuestion} 
                   disabled={currentQuestionIndex === currentQuestions.length - 1}
                   size="sm"
+                  className="h-10 px-3"
                 >
                   Próxima <ChevronDown className="h-4 w-4 ml-1" />
                 </Button>
@@ -682,7 +683,7 @@ const QuestionGenerator = () => {
             <Button 
               onClick={() => generateQuestions()} 
               disabled={isLoading || !userPrompt.trim()}
-              className="h-[60px] px-4"
+              className="h-[60px] px-4 flex-shrink-0"
             >
               {isLoading ? <RotateCw className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
             </Button>

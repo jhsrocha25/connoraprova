@@ -57,15 +57,15 @@ const Index = () => {
                 Continue seus estudos para sua preparação em concursos públicos.
               </p>
             </div>
-            <div className="flex gap-3">
-              <Button asChild>
-                <Link to="/courses" className="flex items-center">
+            <div className="flex flex-wrap gap-3">
+              <Button asChild className="h-12 md:h-10 w-full sm:w-auto text-base md:text-sm px-4">
+                <Link to="/courses" className="flex items-center justify-center">
                   <BookOpen className="mr-2 h-4 w-4" />
                   Explorar Cursos
                 </Link>
               </Button>
-              <Button variant="outline" asChild>
-                <Link to="/aichat" className="flex items-center">
+              <Button variant="outline" asChild className="h-12 md:h-10 w-full sm:w-auto text-base md:text-sm px-4">
+                <Link to="/aichat" className="flex items-center justify-center">
                   <MessageSquare className="mr-2 h-4 w-4" />
                   Gerar Questões
                 </Link>
@@ -164,14 +164,14 @@ const Index = () => {
 
           <div className="mb-8">
             <Tabs defaultValue="in-progress" className="space-y-4">
-              <div className="flex items-center justify-between">
-                <TabsList>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+                <TabsList className="h-12 sm:h-10">
                   <TabsTrigger value="in-progress">Em Progresso</TabsTrigger>
                   <TabsTrigger value="recent">Acessados Recentemente</TabsTrigger>
                 </TabsList>
                 <Link 
                   to="/courses" 
-                  className="text-sm font-medium text-primary hover:underline flex items-center"
+                  className="text-sm font-medium text-primary hover:underline flex items-center px-2 py-1"
                 >
                   Ver todos
                   <svg
@@ -247,7 +247,7 @@ const Index = () => {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button asChild className="w-full">
+                  <Button asChild className="w-full h-12 md:h-10 text-base md:text-sm">
                     <Link to="/aichat">
                       <MessageSquare className="h-4 w-4 mr-2" />
                       Iniciar Conversa com IA
@@ -292,7 +292,7 @@ const Index = () => {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full h-12 md:h-10 text-base md:text-sm">
                     <Clock className="h-4 w-4 mr-2" />
                     Iniciar Simulado
                   </Button>

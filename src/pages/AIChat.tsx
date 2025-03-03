@@ -175,7 +175,6 @@ const AIChat = () => {
                 <span>Voltar para o chat</span>
               </Button>
             </div>
-            {/* Removendo a prop initialPrompt que estava causando o erro */}
             <QuestionGenerator />
           </div>
         ) : (
@@ -314,16 +313,19 @@ const AIChat = () => {
                       <p className="text-sm text-muted-foreground mb-4">
                         Crie questões personalizadas sobre qualquer tema para praticar e testar seus conhecimentos.
                       </p>
-                      <Button onClick={() => startQuestionGenerator()}>
+                      <Button 
+                        onClick={() => startQuestionGenerator()} 
+                        className="h-12 md:h-10 text-base md:text-sm px-4 w-full sm:w-auto"
+                      >
                         <Sparkles className="h-4 w-4 mr-2" />
                         Criar questões personalizadas
                       </Button>
                     </div>
                     
                     <div className="mb-6">
-                      <div className="flex items-center justify-between mb-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
                         <h3 className="font-medium">Exemplos populares</h3>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           <Badge variant="outline">Direito</Badge>
                           <Badge variant="outline">Exatas</Badge>
                           <Badge variant="outline">Português</Badge>
