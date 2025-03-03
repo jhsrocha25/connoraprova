@@ -7,7 +7,7 @@ import { Loader2 } from 'lucide-react';
 type ProtectedRouteProps = {
   children: ReactNode;
   allowedRoles?: string[];
-  bypassForAdmin?: boolean; // New prop to bypass auth check for admins
+  bypassForAdmin?: boolean;
 };
 
 const ProtectedRoute = ({ children, allowedRoles, bypassForAdmin = false }: ProtectedRouteProps) => {
@@ -16,8 +16,27 @@ const ProtectedRoute = ({ children, allowedRoles, bypassForAdmin = false }: Prot
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
+    // Check for admin testing mode based on pathname
+    const pathname = location.pathname;
+    const isAIChat = pathname === '/aichat';
+    const isSimulation = pathname === '/simulation';
+    
+    const aiChatTestingEnabled = localStorage.getItem('adminAiChatEnabled') === 'true';
+    const simulationTestingEnabled = localStorage.getItem('adminSimulationModeEnabled') === 'true';
+    
+    // Allow bypass if the specific feature testing is enabled
+    const bypassAuth = 
+      (isAIChat && aiChatTestingEnabled) || 
+      (isSimulation && simulationTestingEnabled);
+
     // Special bypass for admin users for testing purposes
     if (bypassForAdmin && user?.role === 'admin') {
+      setIsAuthorized(true);
+      return;
+    }
+
+    // Check if bypass is enabled for AI Chat or Simulation Mode
+    if (bypassAuth) {
       setIsAuthorized(true);
       return;
     }
@@ -33,7 +52,7 @@ const ProtectedRoute = ({ children, allowedRoles, bypassForAdmin = false }: Prot
         setIsAuthorized(true);
       }
     }
-  }, [loading, isAuthenticated, user, allowedRoles, bypassForAdmin]);
+  }, [loading, isAuthenticated, user, allowedRoles, bypassForAdmin, location.pathname]);
 
   if (loading || isAuthorized === null) {
     return (

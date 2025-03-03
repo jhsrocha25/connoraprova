@@ -47,6 +47,14 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
+            <Route 
+              path="/simulation" 
+              element={
+                <ProtectedRoute>
+                  <div>Modo Simulado</div>
+                </ProtectedRoute>
+              } 
+            />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route 
