@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, BookOpen, MessageSquare, BarChart, User, LogOut, Settings, FileText, Shield, GraduationCap } from 'lucide-react';
+import { Menu, X, BookOpen, MessageSquare, BarChart, User, LogOut, Settings, FileText, Shield, GraduationCap, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,6 +19,8 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, isAuthenticated } = useAuth();
+  const [aiChatEnabled, setAiChatEnabled] = useState(false);
+  const [simulationModeEnabled, setSimulationModeEnabled] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -31,6 +33,20 @@ const Navbar = () => {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const checkAdminSettings = () => {
+      const aiChatTest = localStorage.getItem('adminAiChatEnabled') === 'true';
+      const simulationTest = localStorage.getItem('adminSimulationModeEnabled') === 'true';
+      setAiChatEnabled(aiChatTest);
+      setSimulationModeEnabled(simulationTest);
+    };
+    
+    checkAdminSettings();
+    const interval = setInterval(checkAdminSettings, 3000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const toggleMenu = () => {
@@ -50,9 +66,19 @@ const Navbar = () => {
   const navLinks = [
     { path: '/', label: 'Início', icon: <BookOpen className="h-4 w-4 mr-2" /> },
     { path: '/concursos', label: 'Concursos', icon: <FileText className="h-4 w-4 mr-2" /> },
-    { path: '/aichat', label: 'AI Chat', icon: <MessageSquare className="h-4 w-4 mr-2" /> },
-    { path: '/progress', label: 'Progresso', icon: <BarChart className="h-4 w-4 mr-2" /> },
   ];
+  
+  if (isAuthenticated || aiChatEnabled) {
+    navLinks.push({ path: '/aichat', label: 'AI Chat', icon: <MessageSquare className="h-4 w-4 mr-2" /> });
+  }
+  
+  if (isAuthenticated || simulationModeEnabled) {
+    navLinks.push({ path: '/simulation', label: 'Simulado', icon: <Clock className="h-4 w-4 mr-2" /> });
+  }
+  
+  if (isAuthenticated) {
+    navLinks.push({ path: '/progress', label: 'Progresso', icon: <BarChart className="h-4 w-4 mr-2" /> });
+  }
 
   if (user?.role === 'admin') {
     navLinks.push({ path: '/admin/dashboard', label: 'Admin', icon: <Shield className="h-4 w-4 mr-2" /> });

@@ -7,14 +7,21 @@ import { Loader2 } from 'lucide-react';
 type ProtectedRouteProps = {
   children: ReactNode;
   allowedRoles?: string[];
+  bypassForAdmin?: boolean; // New prop to bypass auth check for admins
 };
 
-const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children, allowedRoles, bypassForAdmin = false }: ProtectedRouteProps) => {
   const { user, loading, isAuthenticated } = useAuth();
   const location = useLocation();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
+    // Special bypass for admin users for testing purposes
+    if (bypassForAdmin && user?.role === 'admin') {
+      setIsAuthorized(true);
+      return;
+    }
+
     // Check if user is authenticated and authorized based on roles
     if (!loading) {
       if (!isAuthenticated) {
@@ -26,7 +33,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
         setIsAuthorized(true);
       }
     }
-  }, [loading, isAuthenticated, user, allowedRoles]);
+  }, [loading, isAuthenticated, user, allowedRoles, bypassForAdmin]);
 
   if (loading || isAuthorized === null) {
     return (
