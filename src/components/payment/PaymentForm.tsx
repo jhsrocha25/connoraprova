@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -72,7 +72,7 @@ const PaymentForm = () => {
       const brand = detectCardBrand(cardNumberClean);
       const last4 = cardNumberClean.slice(-4);
       
-      // Processar o pagamento com Mercado Pago para validar o cartão
+      // Process payment using the modified PaymentMethod type
       await addPaymentMethod({
         type: paymentType,
         brand,
@@ -81,6 +81,7 @@ const PaymentForm = () => {
         expiryMonth: parseInt(expiryMonth),
         expiryYear: parseInt(expiryYear),
         isDefault: true,
+        // Temporary card data for processing (not stored)
         cardNumber: cardNumberClean,
         securityCode: cvv
       });

@@ -127,6 +127,8 @@ export interface PaymentMethod {
   isDefault: boolean;
   createdAt: Date;
   mpToken?: string;
+  cardNumber?: string;
+  securityCode?: string;
 }
 
 export interface PaymentInvoice {

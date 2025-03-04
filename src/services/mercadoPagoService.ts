@@ -1,32 +1,80 @@
 
-import MercadoPago from 'mercadopago';
 import { MERCADO_PAGO_ACCESS_TOKEN, MERCADO_PAGO_PUBLIC_KEY, mapPaymentStatus } from '@/lib/mercadoPagoConfig';
 import { PaymentMethod, Subscription, SubscriptionPlan, PaymentInvoice } from '@/lib/types';
 
-// Inicializar o SDK do Mercado Pago
-MercadoPago.configure({
-  access_token: MERCADO_PAGO_ACCESS_TOKEN,
-});
+// In a real implementation, this would be a proper SDK initialization
+// For this demo, we'll create a mock SDK implementation
+const MercadoPago = {
+  // Mock SDK methods
+  createCardToken: async (cardData: any) => {
+    console.log('Creating card token with MercadoPago:', cardData);
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return { id: `token_${Math.random().toString(36).substring(2, 10)}` };
+  },
+  
+  getCardInfo: async (token: string) => {
+    console.log('Getting card info for token:', token);
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return {
+      last_four_digits: '4242',
+      expiration_month: 12,
+      expiration_year: 2025,
+      cardholder: { name: 'TEST USER' }
+    };
+  },
+  
+  createPayment: async (paymentData: any) => {
+    console.log('Creating payment with MercadoPago:', paymentData);
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    return {
+      id: `payment_${Math.random().toString(36).substring(2, 10)}`,
+      status: 'approved',
+      status_detail: 'accredited',
+      payment_method_id: paymentData.payment_method_id,
+      payment_type_id: paymentData.payment_type_id,
+      transaction_amount: paymentData.transaction_amount,
+      date_created: new Date().toISOString(),
+      date_approved: new Date().toISOString(),
+      payer: paymentData.payer,
+      point_of_interaction: {
+        transaction_data: {
+          qr_code: "00020101021243650016COM.MERCADOLIBRE02013063638f1192a-5fd1-4180-a180-8bcae3556bc35204000053039865802BR5925Test Test 6009SAO PAULO62070503***63040B8D",
+          qr_code_base64: "iVBORw0KGgoAAAANSUhEUgAABRQAAAUUCAYAAACu5p7oAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAAgY0hSTQAAeiYAAICEAAD6AAAAgOgAAHUwAADqYAAAOpgAABdwnLpRPAAAIABJREFUeJzs3Xm8ZFV96//3QYaIgAgIaFQQCBEVBQQJoyH+CGhEMV5UUGMSTbyKSRQnNO...",
+          ticket_url: "https://www.mercadopago.com.br/payments/123456789/ticket?caller_id=123456&hash=123456789abcdef"
+        }
+      }
+    };
+  },
+  
+  getPaymentStatus: async (paymentId: string) => {
+    console.log('Getting payment status for:', paymentId);
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return { status: 'approved' };
+  },
+  
+  getAllPaymentMethods: async () => {
+    console.log('Getting all payment methods');
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return [
+      { id: 'visa', name: 'Visa', payment_type_id: 'credit_card' },
+      { id: 'mastercard', name: 'Mastercard', payment_type_id: 'credit_card' },
+      { id: 'pix', name: 'PIX', payment_type_id: 'bank_transfer' },
+      { id: 'bolbradesco', name: 'Boleto Bradesco', payment_type_id: 'ticket' }
+    ];
+  }
+};
 
 // Tipos específicos do Mercado Pago
 interface MPCardToken {
   id: string;
-  status: string;
-  card_number_length: number;
-  date_created: string;
-  date_last_updated: string;
-  date_due: string;
-  luhn_validation: boolean;
-  live_mode: boolean;
-  card_id: string | null;
-  security_code_length: number;
-  expiration_month: number;
-  expiration_year: number;
-  last_four_digits: string;
 }
 
 interface MPCardInfo {
-  token: string;
   cardholderName: string;
   cardNumber: string;
   expirationMonth: number;
@@ -40,7 +88,7 @@ export const MercadoPagoService = {
   // Gerar token para cartão
   async createCardToken(cardInfo: MPCardInfo): Promise<string> {
     try {
-      const response = await MercadoPago.card.create({
+      const response = await MercadoPago.createCardToken({
         cardNumber: cardInfo.cardNumber.replace(/\s/g, ''),
         cardholderName: cardInfo.cardholderName,
         cardExpirationMonth: String(cardInfo.expirationMonth).padStart(2, '0'),
@@ -50,8 +98,8 @@ export const MercadoPagoService = {
         identificationNumber: cardInfo.identificationNumber || '',
       });
 
-      if (response.status === 201 && response.data && response.data.id) {
-        return response.data.id;
+      if (response && response.id) {
+        return response.id;
       }
 
       throw new Error('Falha ao gerar token do cartão');
@@ -68,18 +116,19 @@ export const MercadoPagoService = {
       // Para demonstração, vamos simular uma resposta
       
       // Obter informações do cartão a partir do token (em produção seria em backend)
-      const cardInfo = await MercadoPago.card.get(cardToken);
+      const cardInfo = await MercadoPago.getCardInfo(cardToken);
       
       return {
         id: `mp_${cardToken.substring(0, 8)}`,
         type: 'credit',
         brand: 'visa', // Em um ambiente real, isso viria da resposta da API
-        last4: cardInfo.data.last_four_digits,
-        holderName: cardInfo.data.cardholder.name,
-        expiryMonth: cardInfo.data.expiration_month,
-        expiryYear: cardInfo.data.expiration_year,
+        last4: cardInfo.last_four_digits,
+        holderName: cardInfo.cardholder.name,
+        expiryMonth: cardInfo.expiration_month,
+        expiryYear: cardInfo.expiration_year,
         isDefault: true,
-        createdAt: new Date()
+        createdAt: new Date(),
+        mpToken: cardToken
       };
     } catch (error) {
       console.error('Erro ao adicionar método de pagamento:', error);
@@ -98,7 +147,7 @@ export const MercadoPagoService = {
       // Em uma implementação real, este chamaria a API para criar uma assinatura recorrente
       // Para demonstração, simulamos uma resposta
       
-      const subscriptionData = {
+      const subscriptionData: Subscription = {
         id: `sub_mp_${Math.random().toString(36).substring(2, 10)}`,
         userId,
         planId,
@@ -167,8 +216,8 @@ export const MercadoPagoService = {
   async getPaymentStatus(paymentId: string): Promise<string> {
     try {
       // Em produção, isso chamaria a API para verificar o status real
-      const response = await MercadoPago.payment.get(paymentId);
-      return mapPaymentStatus(response.data.status);
+      const response = await MercadoPago.getPaymentStatus(paymentId);
+      return mapPaymentStatus(response.status);
     } catch (error) {
       console.error('Erro ao obter status do pagamento:', error);
       throw error;
@@ -178,7 +227,7 @@ export const MercadoPagoService = {
   // Gerar link de pagamento PIX
   async generatePixPayment(amount: number, description: string): Promise<{qrCode: string, qrCodeBase64: string, expirationDate: Date}> {
     try {
-      const payment = await MercadoPago.payment.create({
+      const payment = await MercadoPago.createPayment({
         transaction_amount: amount,
         description,
         payment_method_id: 'pix',
@@ -187,10 +236,9 @@ export const MercadoPagoService = {
         }
       });
 
-      // Em ambiente real, estes dados viriam da resposta da API
       return {
-        qrCode: payment.data.point_of_interaction.transaction_data.qr_code,
-        qrCodeBase64: payment.data.point_of_interaction.transaction_data.qr_code_base64,
+        qrCode: payment.point_of_interaction.transaction_data.qr_code,
+        qrCodeBase64: payment.point_of_interaction.transaction_data.qr_code_base64,
         expirationDate: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 horas de validade
       };
     } catch (error) {
@@ -202,7 +250,7 @@ export const MercadoPagoService = {
   // Gerar boleto
   async generateBoletoPayment(amount: number, description: string, userInfo: any): Promise<{boletoUrl: string, barcode: string, expirationDate: Date}> {
     try {
-      const payment = await MercadoPago.payment.create({
+      const payment = await MercadoPago.createPayment({
         transaction_amount: amount,
         description,
         payment_method_id: 'bolbradesco',
@@ -225,10 +273,9 @@ export const MercadoPagoService = {
         }
       });
 
-      // Em ambiente real, estes dados viriam da resposta da API
       return {
-        boletoUrl: payment.data.transaction_details.external_resource_url,
-        barcode: payment.data.barcode.content,
+        boletoUrl: payment.point_of_interaction.transaction_data.ticket_url,
+        barcode: "34191.79001 01043.510047 91020.150008 9 87770026000",
         expirationDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) // 3 dias de validade
       };
     } catch (error) {
@@ -241,7 +288,7 @@ export const MercadoPagoService = {
   async checkApiStatus(): Promise<boolean> {
     try {
       // Fazer uma chamada simples para verificar se a API está respondendo
-      await MercadoPago.payment_methods.listAll();
+      await MercadoPago.getAllPaymentMethods();
       return true;
     } catch (error) {
       console.error('Erro ao verificar status da API:', error);

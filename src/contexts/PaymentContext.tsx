@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { 
   PaymentMethod, 
@@ -301,6 +302,44 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const removePaymentMethod = async (paymentMethodId: string): Promise<void> => {
+    // Implementação a ser adicionada
+    console.log('Removing payment method:', paymentMethodId);
+    return Promise.resolve();
+  };
+
+  const setDefaultPaymentMethod = async (paymentMethodId: string): Promise<void> => {
+    // Implementação a ser adicionada
+    console.log('Setting default payment method:', paymentMethodId);
+    return Promise.resolve();
+  };
+
+  const applyCoupon = async (couponCode: string): Promise<boolean> => {
+    // Implementação a ser adicionada
+    console.log('Applying coupon:', couponCode);
+    return Promise.resolve(false);
+  };
+
+  const getInvoices = async (): Promise<PaymentInvoice[]> => {
+    // Implementação a ser adicionada
+    return Promise.resolve([]);
+  };
+
+  const downloadInvoice = async (invoiceId: string): Promise<string> => {
+    // Implementação a ser adicionada
+    return Promise.resolve('');
+  };
+
+  const cancelSubscription = async (): Promise<void> => {
+    // Implementação a ser adicionada
+    return Promise.resolve();
+  };
+
+  const updateSubscription = async (planId: string): Promise<void> => {
+    // Implementação a ser adicionada 
+    return Promise.resolve();
+  };
+
   return (
     <PaymentContext.Provider
       value={{
@@ -312,14 +351,14 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
         isLoading,
         error,
         addPaymentMethod,
-        removePaymentMethod: () => {},
-        setDefaultPaymentMethod: () => {},
+        removePaymentMethod,
+        setDefaultPaymentMethod,
         createSubscription,
-        cancelSubscription: () => Promise.resolve(),
-        updateSubscription: () => Promise.resolve(),
-        applyCoupon: () => Promise.resolve(false),
-        getInvoices: () => Promise.resolve([]),
-        downloadInvoice: () => Promise.resolve(''),
+        cancelSubscription,
+        updateSubscription,
+        applyCoupon,
+        getInvoices,
+        downloadInvoice,
         selectedPlan,
         setSelectedPlan,
         selectedPaymentMethod,
