@@ -260,7 +260,8 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
         setAppliedCoupon,
         generatePixPayment: generatePixPaymentWrapped,
         generateBoletoPayment: generateBoletoPaymentWrapped,
-        processCardPayment: processCardPaymentWrapped
+        processCardPayment: processCardPaymentWrapped,
+        isMercadoPagoReady
       }}
     >
       {children}
