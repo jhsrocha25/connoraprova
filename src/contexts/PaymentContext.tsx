@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { 
   PaymentMethod, 
@@ -42,26 +41,22 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
 
-  // Carregar dados do usuário quando autenticado
   useEffect(() => {
     if (user) {
       loadUserPaymentData();
     } else {
-      // Limpar dados quando o usuário faz logout
       setPaymentMethods([]);
       setInvoices([]);
       setSubscription(null);
     }
   }, [user]);
 
-  // Carregar todos os planos e cupons disponíveis (dados que não dependem do usuário estar logado)
   useEffect(() => {
     loadPlansAndCoupons();
   }, []);
 
   const loadPlansAndCoupons = async () => {
     try {
-      // Em uma aplicação real, isso seria uma chamada API
       setAvailablePlans(mockSubscriptionPlans);
       setActiveCoupons(mockCoupons);
     } catch (err) {
@@ -73,14 +68,9 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
   const loadUserPaymentData = async () => {
     setIsLoading(true);
     try {
-      // Em uma aplicação real, essas seriam chamadas API
-      // Simulação de chamadas assíncronas para o servidor
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
       setPaymentMethods(mockPaymentMethods);
       setInvoices(mockInvoices);
       
-      // Verificar se o usuário já tem uma assinatura
       if (user?.id === 'user-1') {
         setSubscription(mockSubscription);
       } else {
@@ -96,47 +86,41 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const addPaymentMethod = async (paymentMethodData: Partial<PaymentMethod>) => {
+  const addPaymentMethod = async (paymentMethodData: Partial<PaymentMethod>): Promise<void> => {
     setIsLoading(true);
     try {
-      // Simulação de criação de método de pagamento via API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       const newPaymentMethod: PaymentMethod = {
-        id: `pm-${Date.now()}`,
+        id: `pm_${Math.random().toString(36).substring(2, 9)}`,
         type: paymentMethodData.type || 'credit',
         brand: paymentMethodData.brand,
         last4: paymentMethodData.last4,
         holderName: paymentMethodData.holderName,
         expiryMonth: paymentMethodData.expiryMonth,
         expiryYear: paymentMethodData.expiryYear,
-        isDefault: paymentMethods.length === 0 ? true : (paymentMethodData.isDefault || false),
-        createdAt: new Date()
+        isDefault: paymentMethods.length === 0 ? true : !!paymentMethodData.isDefault,
+        createdAt: new Date(),
       };
       
-      // Se o novo método for definido como padrão, atualizar os outros
-      let updatedMethods = [...paymentMethods];
+      const updatedPaymentMethods = [...paymentMethods];
       if (newPaymentMethod.isDefault) {
-        updatedMethods = updatedMethods.map(method => ({
-          ...method,
-          isDefault: false
-        }));
+        updatedPaymentMethods.forEach(method => {
+          method.isDefault = false;
+        });
       }
       
-      setPaymentMethods([...updatedMethods, newPaymentMethod]);
+      setPaymentMethods([...updatedPaymentMethods, newPaymentMethod]);
       
       toast({
         title: "Método de pagamento adicionado",
-        description: "Seu método de pagamento foi cadastrado com sucesso",
+        description: "Seu método de pagamento foi adicionado com sucesso.",
       });
-      
-      return newPaymentMethod;
-    } catch (err) {
-      setError('Erro ao adicionar método de pagamento');
+    } catch (error) {
+      console.error('Erro ao adicionar método de pagamento:', error);
+      setError('Não foi possível adicionar o método de pagamento. Tente novamente.');
       toast({
         variant: 'destructive',
         title: "Erro ao adicionar método de pagamento",
-        description: "Não foi possível adicionar o método de pagamento. Tente novamente."
+        description: "Ocorreu um erro ao adicionar seu método de pagamento. Tente novamente.",
       });
     } finally {
       setIsLoading(false);
@@ -146,19 +130,14 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
   const removePaymentMethod = async (paymentMethodId: string) => {
     setIsLoading(true);
     try {
-      // Verificar se é o método padrão e se há outros métodos disponíveis
       const method = paymentMethods.find(m => m.id === paymentMethodId);
       if (method?.isDefault && paymentMethods.length > 1) {
         throw new Error("Não é possível remover o método de pagamento padrão. Defina outro como padrão primeiro.");
       }
       
-      // Verificar se está em uso por uma assinatura ativa
       if (subscription && subscription.paymentMethodId === paymentMethodId) {
         throw new Error("Este método de pagamento está sendo usado em uma assinatura ativa.");
       }
-      
-      // Simulação de remoção via API
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
       setPaymentMethods(paymentMethods.filter(method => method.id !== paymentMethodId));
       
@@ -183,9 +162,6 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
   const setDefaultPaymentMethod = async (paymentMethodId: string) => {
     setIsLoading(true);
     try {
-      // Simulação de atualização via API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       const updatedMethods = paymentMethods.map(method => ({
         ...method,
         isDefault: method.id === paymentMethodId
@@ -209,103 +185,73 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const createSubscription = async (planId: string, paymentMethodId?: string) => {
+  const createSubscription = async (planId: string, paymentMethodId?: string): Promise<void> => {
     setIsLoading(true);
     try {
-      // Verificar se o usuário está autenticado
-      if (!user) {
-        throw new Error("Você precisa estar logado para assinar um plano.");
-      }
-      
-      // Verificar se há um método de pagamento disponível
-      let selectedMethodId = paymentMethodId;
-      if (!selectedMethodId) {
-        const defaultMethod = paymentMethods.find(method => method.isDefault);
-        if (!defaultMethod) {
-          throw new Error("Você precisa adicionar um método de pagamento.");
-        }
-        selectedMethodId = defaultMethod.id;
-      }
-      
-      // Buscar plano selecionado
       const plan = availablePlans.find(p => p.id === planId);
       if (!plan) {
-        throw new Error("Plano não encontrado.");
+        throw new Error('Plano não encontrado');
       }
       
-      // Simulação de criação de assinatura via API
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Calcular datas
-      const now = new Date();
-      let periodEnd = new Date();
-      
-      switch (plan.interval) {
-        case 'monthly':
-          periodEnd.setMonth(periodEnd.getMonth() + 1);
-          break;
-        case 'quarterly':
-          periodEnd.setMonth(periodEnd.getMonth() + 3);
-          break;
-        case 'annual':
-          periodEnd.setFullYear(periodEnd.getFullYear() + 1);
-          break;
+      let paymentMethod;
+      if (paymentMethodId) {
+        paymentMethod = paymentMethods.find(m => m.id === paymentMethodId);
+      } else if (selectedPaymentMethod) {
+        paymentMethod = selectedPaymentMethod;
+      } else {
+        paymentMethod = paymentMethods.find(m => m.isDefault);
       }
       
-      // Verificar período de teste
-      let trialEnd = undefined;
-      if (plan.trialDays) {
-        trialEnd = new Date();
-        trialEnd.setDate(trialEnd.getDate() + plan.trialDays);
+      if (!paymentMethod) {
+        throw new Error('Método de pagamento não encontrado');
       }
+      
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       const newSubscription: Subscription = {
-        id: `sub-${Date.now()}`,
-        userId: user.id,
+        id: `sub_${Math.random().toString(36).substring(2, 9)}`,
+        userId: 'current_user_id',
         planId: plan.id,
-        status: trialEnd ? 'trialing' : 'active',
-        currentPeriodStart: now,
-        currentPeriodEnd: periodEnd,
+        status: plan.trialDays ? 'trialing' : 'active',
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + (plan.interval === 'monthly' ? 30 : plan.interval === 'quarterly' ? 90 : 365) * 24 * 60 * 60 * 1000),
         cancelAtPeriodEnd: false,
-        createdAt: now,
-        paymentMethodId: selectedMethodId,
-        trialEnd
+        createdAt: new Date(),
+        paymentMethodId: paymentMethod.id,
+        trialEnd: plan.trialDays ? new Date(Date.now() + plan.trialDays * 24 * 60 * 60 * 1000) : undefined,
       };
       
       setSubscription(newSubscription);
       
-      // Criar a primeira fatura (pendente se em período de teste, paga se não houver teste)
       const newInvoice: PaymentInvoice = {
-        id: `inv-${Date.now()}`,
+        id: `inv_${Math.random().toString(36).substring(2, 9)}`,
         subscriptionId: newSubscription.id,
-        amount: trialEnd ? 0 : plan.price,
-        status: trialEnd ? 'pending' : 'paid',
-        paymentMethod: 'credit', // Assumindo que é cartão de crédito por padrão
-        createdAt: now,
-        paidAt: trialEnd ? undefined : now,
-        dueDate: trialEnd || now,
-        receiptUrl: trialEnd ? undefined : '#'
+        amount: plan.price - (appliedCoupon ? (plan.price * appliedCoupon.discountPercentage / 100) : 0),
+        status: plan.trialDays ? 'pending' : 'paid',
+        paymentMethod: paymentMethod.type,
+        createdAt: new Date(),
+        paidAt: plan.trialDays ? undefined : new Date(),
+        dueDate: plan.trialDays ? new Date(Date.now() + plan.trialDays * 24 * 60 * 60 * 1000) : new Date(),
+        invoiceUrl: `https://example.com/invoice/${Math.random().toString(36).substring(2, 9)}`,
+        receiptUrl: plan.trialDays ? undefined : `https://example.com/receipt/${Math.random().toString(36).substring(2, 9)}`,
       };
       
       setInvoices([...invoices, newInvoice]);
       
       toast({
         title: "Assinatura criada com sucesso",
-        description: trialEnd 
-          ? `Seu período de teste de ${plan.trialDays} dias começou hoje` 
-          : `Você está inscrito no plano ${plan.name}`,
+        description: plan.trialDays 
+          ? `Seu período de teste de ${plan.trialDays} dias começou. Aproveite!` 
+          : "Sua assinatura foi ativada com sucesso!",
       });
-      
-      return newSubscription;
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-        toast({
-          variant: 'destructive',
-          title: "Erro ao criar assinatura",
-          description: err.message
-        });
-      }
+    } catch (error) {
+      console.error('Erro ao criar assinatura:', error);
+      setError('Não foi possível criar a assinatura. Tente novamente.');
+      toast({
+        variant: 'destructive',
+        title: "Erro ao criar assinatura",
+        description: "Ocorreu um erro ao processar sua assinatura. Tente novamente ou entre em contato com o suporte.",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -318,10 +264,8 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
         throw new Error("Você não possui uma assinatura ativa.");
       }
       
-      // Simulação de cancelamento via API
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Atualizar a assinatura para cancelar no final do período
       const updatedSubscription = {
         ...subscription,
         cancelAtPeriodEnd: true
@@ -354,20 +298,17 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
         throw new Error("Você não possui uma assinatura ativa para atualizar.");
       }
       
-      // Buscar plano selecionado
       const plan = availablePlans.find(p => p.id === planId);
       if (!plan) {
         throw new Error("Plano não encontrado.");
       }
       
-      // Simulação de atualização via API
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Atualizar a assinatura
       const updatedSubscription = {
         ...subscription,
         planId: planId,
-        cancelAtPeriodEnd: false // Se estava cancelada, reativar
+        cancelAtPeriodEnd: false
       };
       
       setSubscription(updatedSubscription);
@@ -393,7 +334,6 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
   const applyCoupon = async (couponCode: string): Promise<boolean> => {
     setIsLoading(true);
     try {
-      // Verificar se o cupom existe e é válido
       const coupon = activeCoupons.find(
         c => c.code === couponCode && c.isActive && new Date(c.validUntil) > new Date()
       );
@@ -402,10 +342,8 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
         throw new Error("Cupom inválido ou expirado.");
       }
       
-      // Simulação de validação via API
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Verificar se o cupom atingiu o limite de uso
       if (coupon.maxUses && coupon.currentUses >= coupon.maxUses) {
         throw new Error("Este cupom já atingiu o limite máximo de uso.");
       }
@@ -436,7 +374,6 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
   const getInvoices = async (): Promise<PaymentInvoice[]> => {
     setIsLoading(true);
     try {
-      // Simulação de obtenção de faturas via API
       await new Promise(resolve => setTimeout(resolve, 500));
       
       return invoices;
@@ -451,13 +388,11 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
   const downloadInvoice = async (invoiceId: string): Promise<string> => {
     setIsLoading(true);
     try {
-      // Verificar se a fatura existe
       const invoice = invoices.find(inv => inv.id === invoiceId);
       if (!invoice) {
         throw new Error("Fatura não encontrada.");
       }
       
-      // Simulação de download via API
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast({
@@ -465,7 +400,6 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
         description: "O download da sua fatura foi iniciado",
       });
       
-      // Retornar uma URL fictícia para o arquivo
       return "#fatura-exemplo.pdf";
     } catch (err) {
       if (err instanceof Error) {
