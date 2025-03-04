@@ -58,7 +58,8 @@ export const mockPaymentMethods: PaymentMethod[] = [
     expiryMonth: 12,
     expiryYear: 2025,
     isDefault: true,
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // 30 days ago
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+    mpToken: 'mp_8765432'
   },
   {
     id: 'pm_2',
@@ -69,7 +70,8 @@ export const mockPaymentMethods: PaymentMethod[] = [
     expiryMonth: 10,
     expiryYear: 2024,
     isDefault: false,
-    createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000) // 15 days ago
+    createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000), // 15 days ago
+    mpToken: 'mp_1234567'
   }
 ];
 
@@ -83,8 +85,9 @@ export const mockInvoices: PaymentInvoice[] = [
     createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
     paidAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
     dueDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    invoiceUrl: '#',
-    receiptUrl: '#'
+    invoiceUrl: 'https://api.mercadopago.com/v1/invoices/sample',
+    receiptUrl: 'https://api.mercadopago.com/v1/payments/receipt/sample',
+    mpPaymentId: 'mp_pay_123456'
   },
   {
     id: 'inv_2',
@@ -95,8 +98,9 @@ export const mockInvoices: PaymentInvoice[] = [
     createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000), // 60 days ago
     paidAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
     dueDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
-    invoiceUrl: '#',
-    receiptUrl: '#'
+    invoiceUrl: 'https://api.mercadopago.com/v1/invoices/sample2',
+    receiptUrl: 'https://api.mercadopago.com/v1/payments/receipt/sample2',
+    mpPaymentId: 'mp_pay_234567'
   },
   {
     id: 'inv_3',
@@ -106,7 +110,8 @@ export const mockInvoices: PaymentInvoice[] = [
     paymentMethod: 'boleto',
     createdAt: new Date(), // Today
     dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
-    invoiceUrl: '#',
-    receiptUrl: '#'
+    invoiceUrl: 'https://api.mercadopago.com/v1/invoices/sample3',
+    receiptUrl: 'https://api.mercadopago.com/v1/payments/receipt/sample3',
+    mpPaymentId: 'mp_pay_345678'
   }
 ];

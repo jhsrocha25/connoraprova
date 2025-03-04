@@ -1,4 +1,3 @@
-
 export interface Course {
   id: string;
   title: string;
@@ -117,10 +116,9 @@ export type AuthContextType = {
   verifyLoginCode?: (code: string) => Promise<boolean>;
 };
 
-// Novas interfaces para o sistema de pagamento
 export interface PaymentMethod {
   id: string;
-  type: 'credit' | 'debit' | 'pix' | 'boleto';
+  type: 'credit' | 'debit' | 'pix' | 'boleto' | 'account';
   brand?: 'visa' | 'mastercard' | 'amex' | 'elo' | 'hipercard' | 'other';
   last4?: string;
   holderName?: string;
@@ -128,6 +126,7 @@ export interface PaymentMethod {
   expiryYear?: number;
   isDefault: boolean;
   createdAt: Date;
+  mpToken?: string;
 }
 
 export interface PaymentInvoice {
@@ -135,12 +134,13 @@ export interface PaymentInvoice {
   subscriptionId: string;
   amount: number;
   status: 'pending' | 'paid' | 'failed' | 'refunded';
-  paymentMethod: 'credit' | 'debit' | 'pix' | 'boleto';
+  paymentMethod: 'credit' | 'debit' | 'pix' | 'boleto' | 'account';
   createdAt: Date;
   paidAt?: Date;
   dueDate: Date;
   invoiceUrl?: string;
   receiptUrl?: string;
+  mpPaymentId?: string;
 }
 
 export interface SubscriptionPlan {
@@ -166,6 +166,7 @@ export interface Subscription {
   createdAt: Date;
   paymentMethodId?: string;
   trialEnd?: Date;
+  mpSubscriptionId?: string;
 }
 
 export interface Coupon {
@@ -176,6 +177,16 @@ export interface Coupon {
   maxUses?: number;
   currentUses: number;
   isActive: boolean;
+}
+
+export interface MercadoPagoCheckout {
+  preferenceId: string;
+  redirectUrl?: string;
+  qrCode?: string;
+  qrCodeBase64?: string;
+  boletoUrl?: string;
+  barcodeContent?: string;
+  expirationDate?: Date;
 }
 
 export type PaymentContextType = {
@@ -201,4 +212,7 @@ export type PaymentContextType = {
   setSelectedPaymentMethod: (method: PaymentMethod | null) => void;
   appliedCoupon: Coupon | null;
   setAppliedCoupon: (coupon: Coupon | null) => void;
+  generatePixPayment: (amount: number, description: string) => Promise<MercadoPagoCheckout>;
+  generateBoletoPayment: (amount: number, description: string) => Promise<MercadoPagoCheckout>;
+  processCardPayment: (cardInfo: any, amount: number, description: string) => Promise<string>;
 };

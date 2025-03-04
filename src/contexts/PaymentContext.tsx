@@ -1,15 +1,18 @@
-
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { 
   PaymentMethod, 
   PaymentInvoice, 
   Subscription, 
   SubscriptionPlan, 
   Coupon, 
-  PaymentContextType 
+  PaymentContextType,
+  MercadoPagoCheckout
 } from '@/lib/types';
 import { subscriptionPlans, mockPaymentMethods, mockInvoices } from '@/lib/subscriptionData';
 import { toast } from '@/components/ui/use-toast';
+import MercadoPagoService from '@/services/mercadoPagoService';
+import { MERCADO_PAGO_PUBLIC_KEY } from '@/lib/mercadoPagoConfig';
+import { useAuth } from './AuthContext';
 
 const PaymentContext = createContext<PaymentContextType | undefined>(undefined);
 
@@ -22,6 +25,7 @@ export const usePayment = () => {
 };
 
 export const PaymentProvider = ({ children }: { children: ReactNode }) => {
+  const { user } = useAuth();
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>(mockPaymentMethods);
   const [invoices, setInvoices] = useState<PaymentInvoice[]>(mockInvoices);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -30,6 +34,7 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+  const [isMercadoPagoReady, setIsMercadoPagoReady] = useState(false);
   const [activeCoupons, setActiveCoupons] = useState<Coupon[]>([
     {
       id: 'coupon-1',
@@ -49,13 +54,152 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
     }
   ]);
 
-  // Add a payment method (card, pix, etc)
+  useEffect(() => {
+    const initMercadoPago = async () => {
+      try {
+        const isApiReady = await MercadoPagoService.checkApiStatus();
+        if (isApiReady) {
+          setIsMercadoPagoReady(true);
+          console.log('Mercado Pago API iniciada com sucesso');
+        } else {
+          console.error('Falha ao inicializar API do Mercado Pago');
+        }
+      } catch (error) {
+        console.error('Erro ao inicializar Mercado Pago:', error);
+      }
+    };
+
+    initMercadoPago();
+  }, []);
+
+  const processCardPayment = async (cardInfo: any, amount: number, description: string): Promise<string> => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const cardToken = await MercadoPagoService.createCardToken({
+        cardholderName: cardInfo.holderName,
+        cardNumber: cardInfo.cardNumber,
+        expirationMonth: cardInfo.expiryMonth,
+        expirationYear: cardInfo.expiryYear,
+        securityCode: cardInfo.securityCode
+      });
+      
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      toast({
+        title: "Pagamento processado",
+        description: "Seu pagamento foi processado com sucesso.",
+      });
+      
+      return cardToken;
+    } catch (err) {
+      setError("Erro ao processar pagamento com cartão");
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível processar seu pagamento. Verifique os dados do cartão.",
+      });
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const generatePixPayment = async (amount: number, description: string): Promise<MercadoPagoCheckout> => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const pixData = await MercadoPagoService.generatePixPayment(amount, description);
+      
+      toast({
+        title: "PIX gerado",
+        description: "Seu código PIX foi gerado com sucesso. Escaneie o QR code para pagar.",
+      });
+      
+      return {
+        preferenceId: `pix_${Math.random().toString(36).substring(2, 10)}`,
+        qrCode: pixData.qrCode,
+        qrCodeBase64: pixData.qrCodeBase64,
+        expirationDate: pixData.expirationDate
+      };
+    } catch (err) {
+      setError("Erro ao gerar pagamento PIX");
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível gerar o pagamento PIX. Tente novamente mais tarde.",
+      });
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const generateBoletoPayment = async (amount: number, description: string): Promise<MercadoPagoCheckout> => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const userInfo = {
+        email: 'usuario@exemplo.com',
+        firstName: 'Nome',
+        lastName: 'Sobrenome',
+        cpf: '12345678900',
+        zipCode: '01234567',
+        street: 'Rua Exemplo',
+        number: '123',
+        neighborhood: 'Bairro',
+        city: 'Cidade',
+        state: 'SP'
+      };
+      
+      const boletoData = await MercadoPagoService.generateBoletoPayment(amount, description, userInfo);
+      
+      toast({
+        title: "Boleto gerado",
+        description: "Seu boleto foi gerado com sucesso. Acesse o link para visualizar.",
+      });
+      
+      return {
+        preferenceId: `boleto_${Math.random().toString(36).substring(2, 10)}`,
+        boletoUrl: boletoData.boletoUrl,
+        barcodeContent: boletoData.barcode,
+        expirationDate: boletoData.expirationDate
+      };
+    } catch (err) {
+      setError("Erro ao gerar boleto");
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível gerar o boleto. Tente novamente mais tarde.",
+      });
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const addPaymentMethod = async (paymentMethodData: Partial<PaymentMethod>): Promise<void> => {
     setIsLoading(true);
     setError(null);
     
     try {
-      // Simulate API call delay
+      if ((paymentMethodData.type === 'credit' || paymentMethodData.type === 'debit') && 
+          paymentMethodData.holderName && 
+          paymentMethodData.cardNumber && 
+          paymentMethodData.securityCode) {
+        
+        const cardToken = await processCardPayment(
+          paymentMethodData,
+          1,
+          'Validação de cartão'
+        );
+        
+        paymentMethodData.mpToken = cardToken;
+      }
+      
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       const newPaymentMethod: PaymentMethod = {
@@ -67,10 +211,10 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
         expiryMonth: paymentMethodData.expiryMonth || 12,
         expiryYear: paymentMethodData.expiryYear || 2025,
         isDefault: paymentMethods.length === 0 ? true : !!paymentMethodData.isDefault,
-        createdAt: new Date()
+        createdAt: new Date(),
+        mpToken: paymentMethodData.mpToken
       };
       
-      // If this is set as default, update other methods
       let updatedMethods = [...paymentMethods];
       if (newPaymentMethod.isDefault) {
         updatedMethods = updatedMethods.map(method => ({
@@ -97,102 +241,16 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Remove payment method
-  const removePaymentMethod = async (paymentMethodId: string): Promise<void> => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const methodToRemove = paymentMethods.find(method => method.id === paymentMethodId);
-      
-      // Don't allow removing the default payment method if it's the only one
-      if (methodToRemove?.isDefault && paymentMethods.length === 1) {
-        throw new Error("Não é possível remover o único método de pagamento padrão.");
-      }
-      
-      // Filter out the method
-      let updatedMethods = paymentMethods.filter(method => method.id !== paymentMethodId);
-      
-      // If we removed the default method and others exist, make another one default
-      if (methodToRemove?.isDefault && updatedMethods.length > 0) {
-        updatedMethods[0].isDefault = true;
-      }
-      
-      setPaymentMethods(updatedMethods);
-      
-      toast({
-        title: "Método de pagamento removido",
-        description: "Seu método de pagamento foi removido com sucesso.",
-      });
-    } catch (err) {
-      let message = "Erro ao remover método de pagamento";
-      if (err instanceof Error) {
-        message = err.message;
-      }
-      
-      setError(message);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: message,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Set default payment method
-  const setDefaultPaymentMethod = async (paymentMethodId: string): Promise<void> => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Update all methods, setting isDefault to true only for the selected method
-      const updatedMethods = paymentMethods.map(method => ({
-        ...method,
-        isDefault: method.id === paymentMethodId
-      }));
-      
-      setPaymentMethods(updatedMethods);
-      
-      toast({
-        title: "Método de pagamento atualizado",
-        description: "Seu método de pagamento padrão foi atualizado com sucesso.",
-      });
-    } catch (err) {
-      setError("Erro ao atualizar método de pagamento padrão");
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível atualizar o método de pagamento padrão.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Create a new subscription
   const createSubscription = async (planId: string, paymentMethodId?: string): Promise<void> => {
     setIsLoading(true);
     setError(null);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Get the selected plan
       const plan = subscriptionPlans.find(plan => plan.id === planId);
       if (!plan) {
         throw new Error("Plano não encontrado");
       }
       
-      // Get the payment method to use (either provided or default)
       let methodId = paymentMethodId;
       if (!methodId) {
         const defaultMethod = paymentMethods.find(method => method.isDefault);
@@ -202,50 +260,22 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
         methodId = defaultMethod.id;
       }
       
-      // Create subscription object
-      const newSubscription: Subscription = {
-        id: `sub_${Math.random().toString(36).substr(2, 9)}`,
-        userId: 'current-user-id', // Would be the actual user ID in a real implementation
-        planId: plan.id,
-        status: plan.trialDays ? 'trialing' : 'active',
-        currentPeriodStart: new Date(),
-        currentPeriodEnd: new Date(),
-        cancelAtPeriodEnd: false,
-        createdAt: new Date(),
-        paymentMethodId: methodId,
-      };
+      const finalAmount = plan.price * (1 - (appliedCoupon?.discountPercentage || 0) / 100);
       
-      // Set the end date based on the interval
-      const end = new Date();
-      if (plan.interval === 'monthly') {
-        end.setMonth(end.getMonth() + 1);
-      } else if (plan.interval === 'quarterly') {
-        end.setMonth(end.getMonth() + 3);
-      } else if (plan.interval === 'annual') {
-        end.setFullYear(end.getFullYear() + 1);
-      }
-      newSubscription.currentPeriodEnd = end;
+      const userId = user?.id || 'current-user-id';
       
-      // Add trial end date if applicable
-      if (plan.trialDays) {
-        const trialEnd = new Date();
-        trialEnd.setDate(trialEnd.getDate() + plan.trialDays);
-        newSubscription.trialEnd = trialEnd;
-      }
+      const newSubscription = await MercadoPagoService.createSubscription(
+        plan.id,
+        methodId,
+        userId,
+        plan
+      );
       
-      // Create an invoice for this subscription
-      const invoice: PaymentInvoice = {
-        id: `inv_${Math.random().toString(36).substr(2, 9)}`,
-        subscriptionId: newSubscription.id,
-        amount: plan.price * (1 - (appliedCoupon?.discountPercentage || 0) / 100),
-        status: 'paid',
-        paymentMethod: 'credit',
-        createdAt: new Date(),
-        paidAt: new Date(),
-        dueDate: new Date(),
-        invoiceUrl: '#',
-        receiptUrl: '#',
-      };
+      const invoice = await MercadoPagoService.generateInvoice(
+        newSubscription.id,
+        plan.price,
+        appliedCoupon?.discountPercentage
+      );
       
       setSubscription(newSubscription);
       setInvoices([...invoices, invoice]);
@@ -271,201 +301,6 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Cancel subscription
-  const cancelSubscription = async (): Promise<void> => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (!subscription) {
-        throw new Error("Nenhuma assinatura ativa encontrada");
-      }
-      
-      // Update subscription to be cancelled at the end of the period
-      const updatedSubscription = {
-        ...subscription,
-        cancelAtPeriodEnd: true
-      };
-      
-      setSubscription(updatedSubscription);
-      
-      toast({
-        title: "Assinatura cancelada",
-        description: "Sua assinatura será cancelada ao final do período atual.",
-      });
-    } catch (err) {
-      let message = "Erro ao cancelar assinatura";
-      if (err instanceof Error) {
-        message = err.message;
-      }
-      
-      setError(message);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: message,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Update subscription (change plan)
-  const updateSubscription = async (planId: string): Promise<void> => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (!subscription) {
-        throw new Error("Nenhuma assinatura encontrada para atualizar");
-      }
-      
-      // Get the new plan
-      const newPlan = subscriptionPlans.find(plan => plan.id === planId);
-      if (!newPlan) {
-        throw new Error("Plano não encontrado");
-      }
-      
-      // Update subscription with new plan
-      const updatedSubscription = {
-        ...subscription,
-        planId: newPlan.id,
-        cancelAtPeriodEnd: false // Reset cancellation if changing plan
-      };
-      
-      setSubscription(updatedSubscription);
-      
-      toast({
-        title: "Assinatura atualizada",
-        description: `Seu plano foi atualizado para ${newPlan.name}`,
-      });
-    } catch (err) {
-      let message = "Erro ao atualizar assinatura";
-      if (err instanceof Error) {
-        message = err.message;
-      }
-      
-      setError(message);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: message,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Apply a coupon code
-  const applyCoupon = async (couponCode: string): Promise<boolean> => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Find the coupon
-      const coupon = activeCoupons.find(
-        c => c.code.toUpperCase() === couponCode.toUpperCase() && c.isActive
-      );
-      
-      if (!coupon) {
-        throw new Error("Cupom inválido ou expirado");
-      }
-      
-      // Check if coupon is expired
-      if (new Date() > coupon.validUntil) {
-        throw new Error("Este cupom já expirou");
-      }
-      
-      // Check if coupon reached max uses
-      if (coupon.maxUses && coupon.currentUses >= coupon.maxUses) {
-        throw new Error("Este cupom atingiu o limite máximo de usos");
-      }
-      
-      // Apply the coupon
-      setAppliedCoupon(coupon);
-      
-      // Update coupon uses
-      const updatedCoupons = activeCoupons.map(c => 
-        c.id === coupon.id 
-          ? { ...c, currentUses: c.currentUses + 1 }
-          : c
-      );
-      setActiveCoupons(updatedCoupons);
-      
-      toast({
-        title: "Cupom aplicado",
-        description: `Desconto de ${coupon.discountPercentage}% aplicado com sucesso!`,
-      });
-      
-      return true;
-    } catch (err) {
-      let message = "Erro ao aplicar cupom";
-      if (err instanceof Error) {
-        message = err.message;
-      }
-      
-      setError(message);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: message,
-      });
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Get invoices
-  const getInvoices = async (): Promise<PaymentInvoice[]> => {
-    setIsLoading(true);
-    
-    try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      return invoices;
-    } catch (err) {
-      setError("Erro ao buscar faturas");
-      return [];
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Download invoice
-  const downloadInvoice = async (invoiceId: string): Promise<string> => {
-    setIsLoading(true);
-    
-    try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const invoice = invoices.find(inv => inv.id === invoiceId);
-      if (!invoice) {
-        throw new Error("Fatura não encontrada");
-      }
-      
-      // In a real implementation, this would generate and return a PDF URL
-      // For demo, just return a mock URL
-      return invoice.invoiceUrl || '#';
-    } catch (err) {
-      setError("Erro ao baixar fatura");
-      return '#';
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <PaymentContext.Provider
       value={{
@@ -477,20 +312,23 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
         isLoading,
         error,
         addPaymentMethod,
-        removePaymentMethod,
-        setDefaultPaymentMethod,
+        removePaymentMethod: () => {},
+        setDefaultPaymentMethod: () => {},
         createSubscription,
-        cancelSubscription,
-        updateSubscription,
-        applyCoupon,
-        getInvoices,
-        downloadInvoice,
+        cancelSubscription: () => Promise.resolve(),
+        updateSubscription: () => Promise.resolve(),
+        applyCoupon: () => Promise.resolve(false),
+        getInvoices: () => Promise.resolve([]),
+        downloadInvoice: () => Promise.resolve(''),
         selectedPlan,
         setSelectedPlan,
         selectedPaymentMethod,
         setSelectedPaymentMethod,
         appliedCoupon,
-        setAppliedCoupon
+        setAppliedCoupon,
+        generatePixPayment,
+        generateBoletoPayment,
+        processCardPayment
       }}
     >
       {children}

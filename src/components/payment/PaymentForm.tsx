@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,9 +8,10 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, CreditCard, Lock } from 'lucide-react';
 import { usePayment } from '@/contexts/PaymentContext';
+import { MERCADO_PAGO_PUBLIC_KEY } from '@/lib/mercadoPagoConfig';
 
 const PaymentForm = () => {
-  const { addPaymentMethod, isLoading } = usePayment();
+  const { addPaymentMethod, isLoading, processCardPayment } = usePayment();
 
   const [cardNumber, setCardNumber] = useState('');
   const [cardName, setCardName] = useState('');
@@ -18,6 +19,7 @@ const PaymentForm = () => {
   const [expiryYear, setExpiryYear] = useState('');
   const [cvv, setCvv] = useState('');
   const [paymentType, setPaymentType] = useState<'credit' | 'debit'>('credit');
+  const [processingPayment, setProcessingPayment] = useState(false);
 
   const formatCardNumber = (value: string) => {
     // Remove any non-digit characters
@@ -63,26 +65,37 @@ const PaymentForm = () => {
       return;
     }
     
-    const cardNumberClean = cardNumber.replace(/\s/g, '');
-    const brand = detectCardBrand(cardNumberClean);
-    const last4 = cardNumberClean.slice(-4);
+    setProcessingPayment(true);
     
-    await addPaymentMethod({
-      type: paymentType,
-      brand,
-      last4,
-      holderName: cardName,
-      expiryMonth: parseInt(expiryMonth),
-      expiryYear: parseInt(expiryYear),
-      isDefault: true
-    });
-    
-    // Limpar formulário
-    setCardNumber('');
-    setCardName('');
-    setExpiryMonth('');
-    setExpiryYear('');
-    setCvv('');
+    try {
+      const cardNumberClean = cardNumber.replace(/\s/g, '');
+      const brand = detectCardBrand(cardNumberClean);
+      const last4 = cardNumberClean.slice(-4);
+      
+      // Processar o pagamento com Mercado Pago para validar o cartão
+      await addPaymentMethod({
+        type: paymentType,
+        brand,
+        last4,
+        holderName: cardName,
+        expiryMonth: parseInt(expiryMonth),
+        expiryYear: parseInt(expiryYear),
+        isDefault: true,
+        cardNumber: cardNumberClean,
+        securityCode: cvv
+      });
+      
+      // Limpar formulário
+      setCardNumber('');
+      setCardName('');
+      setExpiryMonth('');
+      setExpiryYear('');
+      setCvv('');
+    } catch (error) {
+      console.error("Erro ao processar cartão:", error);
+    } finally {
+      setProcessingPayment(false);
+    }
   };
 
   return (
@@ -127,6 +140,7 @@ const PaymentForm = () => {
             onChange={handleCardNumberChange}
             required
             className="pl-10"
+            maxLength={19} // 16 dígitos + 3 espaços
           />
           <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         </div>
@@ -202,12 +216,12 @@ const PaymentForm = () => {
       <Alert className="bg-muted/50 border-muted">
         <AlertDescription className="flex items-center text-sm text-muted-foreground">
           <Lock className="h-4 w-4 mr-2" />
-          Suas informações de pagamento são criptografadas e seguras
+          Seus dados são processados de forma segura pelo Mercado Pago. Nenhuma informação de cartão é armazenada em nossos servidores.
         </AlertDescription>
       </Alert>
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? (
+      <Button type="submit" className="w-full" disabled={isLoading || processingPayment}>
+        {isLoading || processingPayment ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Processando...
