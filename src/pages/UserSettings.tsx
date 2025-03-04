@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -12,9 +11,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { EyeIcon, EyeOffIcon, Loader2, Save, Upload } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePayment } from '@/contexts/PaymentContext';
+import PaymentMethods from '@/components/payment/PaymentMethods';
+import SubscriptionManagement from '@/components/payment/SubscriptionManagement';
+import PaymentHistory from '@/components/payment/PaymentHistory';
 
 const UserSettings = () => {
   const { user, updateProfile, loading, isAuthenticated } = useAuth();
+  const { subscription, paymentMethods, invoices } = usePayment();
   const navigate = useNavigate();
   
   const [name, setName] = useState('');
@@ -32,14 +36,12 @@ const UserSettings = () => {
     reminders: true
   });
 
-  // Redirecionar se não estiver autenticado
   useEffect(() => {
     if (!isAuthenticated && !loading) {
       navigate('/login');
     }
   }, [isAuthenticated, loading, navigate]);
 
-  // Preencher os campos com os dados do usuário
   useEffect(() => {
     if (user) {
       setName(user.name);
@@ -62,7 +64,6 @@ const UserSettings = () => {
   const handlePasswordUpdate = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validar senhas
     if (newPassword !== confirmPassword) {
       setPasswordError('As senhas não correspondem');
       return;
@@ -74,7 +75,6 @@ const UserSettings = () => {
     }
     
     setPasswordError('');
-    // Simulação de atualização de senha
     alert('Senha atualizada com sucesso (simulação)');
     setCurrentPassword('');
     setNewPassword('');
@@ -82,7 +82,6 @@ const UserSettings = () => {
   };
 
   const handleNotificationUpdate = async () => {
-    // Simulação de atualização de notificações
     console.log('Notificações atualizadas:', notifications);
     alert('Preferências de notificação atualizadas (simulação)');
   };
@@ -113,10 +112,12 @@ const UserSettings = () => {
           <h1 className="text-3xl font-bold tracking-tight mb-6">Configurações da Conta</h1>
           
           <Tabs defaultValue="profile" className="space-y-6">
-            <TabsList>
+            <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full">
               <TabsTrigger value="profile">Perfil</TabsTrigger>
               <TabsTrigger value="password">Senha</TabsTrigger>
               <TabsTrigger value="notifications">Notificações</TabsTrigger>
+              <TabsTrigger value="payment">Pagamento</TabsTrigger>
+              <TabsTrigger value="subscription">Assinatura</TabsTrigger>
             </TabsList>
             
             <TabsContent value="profile">
@@ -377,6 +378,46 @@ const UserSettings = () => {
                       </Button>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="payment">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Métodos de Pagamento</CardTitle>
+                  <CardDescription>
+                    Gerencie seus métodos de pagamento para assinaturas e compras
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <PaymentMethods />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="subscription">
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>Gerenciamento de Assinatura</CardTitle>
+                  <CardDescription>
+                    Visualize e gerencie seu plano de assinatura atual
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <SubscriptionManagement />
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Histórico de Pagamentos</CardTitle>
+                  <CardDescription>
+                    Visualize seu histórico de faturas e pagamentos
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <PaymentHistory />
                 </CardContent>
               </Card>
             </TabsContent>

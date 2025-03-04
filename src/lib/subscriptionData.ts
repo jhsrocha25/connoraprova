@@ -1,137 +1,112 @@
 
-import { SubscriptionPlan, PaymentMethod, PaymentInvoice, Subscription, Coupon } from './types';
+import { SubscriptionPlan, PaymentMethod, PaymentInvoice } from './types';
 
-export const mockSubscriptionPlans: SubscriptionPlan[] = [
+export const subscriptionPlans: SubscriptionPlan[] = [
   {
-    id: 'plan-1',
-    name: 'Plano Básico',
-    description: 'Acesso a material básico e simulados limitados',
+    id: 'plano-mensal',
+    name: 'Plano Mensal',
+    description: 'Acesso a todos os recursos premium por um mês',
     price: 49.90,
     interval: 'monthly',
     features: [
-      'Acesso a todos os materiais básicos',
-      'Simulados limitados por mês',
-      'Suporte por email'
+      'Acesso a todos os cursos',
+      'Material exclusivo para concursos',
+      'Simulados ilimitados',
+      'Suporte prioritário'
     ],
     trialDays: 7
   },
   {
-    id: 'plan-2',
-    name: 'Plano Premium',
-    description: 'Acesso ilimitado a todo conteúdo e recursos',
-    price: 89.90,
-    interval: 'monthly',
+    id: 'plano-trimestral',
+    name: 'Plano Trimestral',
+    description: 'Economize 15% com o plano trimestral',
+    price: 127.50,
+    interval: 'quarterly',
     features: [
-      'Acesso a todo o conteúdo da plataforma',
-      'Simulados ilimitados',
-      'Suporte prioritário',
-      'Acesso ao chat de IA',
-      'Análise de desempenho avançada'
+      'Todos os benefícios do plano mensal',
+      'Economize 15% comparado ao plano mensal',
+      'Acesso a webinars exclusivos',
+      'Simulados personalizados'
     ],
     isMostPopular: true,
     trialDays: 7
   },
   {
-    id: 'plan-3',
+    id: 'plano-anual',
     name: 'Plano Anual',
-    description: 'Economia de 20% com pagamento anual',
-    price: 863.04, // 12 x 71.92 (20% de desconto no mensal Premium)
+    description: 'Melhor valor: economize 30% com o plano anual',
+    price: 419.90,
     interval: 'annual',
     features: [
-      'Todos os benefícios do Plano Premium',
-      'Economia de 20% em relação ao pagamento mensal',
-      'Acesso a treinamentos exclusivos',
-      'Mentoria mensal',
-      'Garantia de satisfação de 30 dias'
+      'Todos os benefícios dos planos anteriores',
+      'Economize 30% comparado ao plano mensal',
+      'Acesso a conteúdo adicional exclusivo',
+      'Mentorias trimestrais',
+      'Certificados de conclusão'
     ],
-    discountPercentage: 20,
-    trialDays: 7
+    discountPercentage: 30
   }
 ];
 
 export const mockPaymentMethods: PaymentMethod[] = [
   {
-    id: 'pm-1',
+    id: 'pm_1',
     type: 'credit',
     brand: 'visa',
     last4: '4242',
-    holderName: 'Usuário Teste',
+    holderName: 'João Silva',
     expiryMonth: 12,
-    expiryYear: 2024,
+    expiryYear: 2025,
     isDefault: true,
-    createdAt: new Date('2023-05-10')
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // 30 days ago
   },
   {
-    id: 'pm-2',
-    type: 'pix',
+    id: 'pm_2',
+    type: 'credit',
+    brand: 'mastercard',
+    last4: '5555',
+    holderName: 'João Silva',
+    expiryMonth: 10,
+    expiryYear: 2024,
     isDefault: false,
-    createdAt: new Date('2023-06-15')
+    createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000) // 15 days ago
   }
 ];
 
 export const mockInvoices: PaymentInvoice[] = [
   {
-    id: 'inv-1',
-    subscriptionId: 'sub-1',
-    amount: 89.90,
+    id: 'inv_1',
+    subscriptionId: 'sub_1',
+    amount: 49.90,
     status: 'paid',
     paymentMethod: 'credit',
-    createdAt: new Date('2023-06-01'),
-    paidAt: new Date('2023-06-01'),
-    dueDate: new Date('2023-06-05'),
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+    paidAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    dueDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    invoiceUrl: '#',
     receiptUrl: '#'
   },
   {
-    id: 'inv-2',
-    subscriptionId: 'sub-1',
-    amount: 89.90,
+    id: 'inv_2',
+    subscriptionId: 'sub_1',
+    amount: 49.90,
     status: 'paid',
     paymentMethod: 'credit',
-    createdAt: new Date('2023-07-01'),
-    paidAt: new Date('2023-07-01'),
-    dueDate: new Date('2023-07-05'),
+    createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000), // 60 days ago
+    paidAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
+    dueDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
+    invoiceUrl: '#',
     receiptUrl: '#'
   },
   {
-    id: 'inv-3',
-    subscriptionId: 'sub-1',
-    amount: 89.90,
+    id: 'inv_3',
+    subscriptionId: 'sub_1',
+    amount: 49.90,
     status: 'pending',
-    paymentMethod: 'credit',
-    createdAt: new Date('2023-08-01'),
-    dueDate: new Date('2023-08-05')
-  }
-];
-
-export const mockSubscription: Subscription = {
-  id: 'sub-1',
-  userId: 'user-1',
-  planId: 'plan-2',
-  status: 'active',
-  currentPeriodStart: new Date('2023-07-01'),
-  currentPeriodEnd: new Date('2023-08-01'),
-  cancelAtPeriodEnd: false,
-  createdAt: new Date('2023-06-01'),
-  paymentMethodId: 'pm-1'
-};
-
-export const mockCoupons: Coupon[] = [
-  {
-    id: 'coupon-1',
-    code: 'BEMVINDO10',
-    discountPercentage: 10,
-    validUntil: new Date('2023-12-31'),
-    maxUses: 1000,
-    currentUses: 456,
-    isActive: true
-  },
-  {
-    id: 'coupon-2',
-    code: 'FERIAS20',
-    discountPercentage: 20,
-    validUntil: new Date('2023-09-30'),
-    maxUses: 500,
-    currentUses: 123,
-    isActive: true
+    paymentMethod: 'boleto',
+    createdAt: new Date(), // Today
+    dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
+    invoiceUrl: '#',
+    receiptUrl: '#'
   }
 ];

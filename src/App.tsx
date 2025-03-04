@@ -16,72 +16,95 @@ import UserSettings from "./pages/UserSettings";
 import AdminDashboard from "./pages/AdminDashboard";
 import Courses from "./pages/Courses";
 import { AuthProvider } from "./contexts/AuthContext";
+import { PaymentProvider } from "./contexts/PaymentContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import SubscriptionPlans from "./pages/SubscriptionPlans";
+import SubscriptionCheckout from "./pages/SubscriptionCheckout";
+import SubscriptionSuccess from "./pages/SubscriptionSuccess";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/concursos" element={<Concursos />} />
-            <Route path="/concursos/:id" element={<ConcursoDetails />} />
-            <Route 
-              path="/progress" 
-              element={
-                <ProtectedRoute>
-                  <Progress />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/aichat" 
-              element={
-                <ProtectedRoute>
-                  <AIChat />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/simulation" 
-              element={
-                <ProtectedRoute>
-                  <div>Modo Simulado</div>
-                </ProtectedRoute>
-              } 
-            />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/terms" element={<div>Termos de Uso</div>} />
-            <Route path="/privacy" element={<div>Política de Privacidade</div>} />
-            <Route path="/recovery" element={<div>Recuperação de Senha</div>} />
-            <Route 
-              path="/settings" 
-              element={
-                <ProtectedRoute>
-                  <UserSettings />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/dashboard" 
-              element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route path="/courses" element={<Courses />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <PaymentProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/concursos" element={<Concursos />} />
+              <Route path="/concursos/:id" element={<ConcursoDetails />} />
+              <Route 
+                path="/progress" 
+                element={
+                  <ProtectedRoute>
+                    <Progress />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/aichat" 
+                element={
+                  <ProtectedRoute>
+                    <AIChat />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/simulation" 
+                element={
+                  <ProtectedRoute>
+                    <div>Modo Simulado</div>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/terms" element={<div>Termos de Uso</div>} />
+              <Route path="/privacy" element={<div>Política de Privacidade</div>} />
+              <Route path="/recovery" element={<div>Recuperação de Senha</div>} />
+              <Route 
+                path="/settings" 
+                element={
+                  <ProtectedRoute>
+                    <UserSettings />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/dashboard" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route path="/courses" element={<Courses />} />
+              <Route path="/subscription/plans" element={<SubscriptionPlans />} />
+              <Route 
+                path="/subscription/checkout" 
+                element={
+                  <ProtectedRoute>
+                    <SubscriptionCheckout />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/subscription/success" 
+                element={
+                  <ProtectedRoute>
+                    <SubscriptionSuccess />
+                  </ProtectedRoute>
+                } 
+              />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </PaymentProvider>
     </AuthProvider>
   </QueryClientProvider>
 );
