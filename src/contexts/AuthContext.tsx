@@ -391,6 +391,61 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const registerWithGoogle = async (googleUserData: { name: string; email: string; imageUrl?: string }) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Simulating a registration request
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Check if user already exists
+      if (googleUserData.email === mockUser.email) {
+        // User exists, log them in
+        setUser(mockUser);
+        localStorage.setItem('user', JSON.stringify(mockUser));
+        
+        toast({
+          title: 'Login realizado com sucesso',
+          description: `Bem-vindo de volta, ${mockUser.name}!`,
+        });
+      } else {
+        // Create a new user based on Google data
+        const newUser: User = {
+          ...mockUser,
+          id: Math.random().toString(36).substring(2, 9),
+          name: googleUserData.name,
+          email: googleUserData.email,
+          avatar: googleUserData.imageUrl,
+          joinedDate: new Date(),
+        };
+        
+        // Store user in localStorage
+        setUser(newUser);
+        localStorage.setItem('user', JSON.stringify(newUser));
+        
+        // Add the device to known devices
+        addKnownDevice(googleUserData.email, deviceId, '127.0.0.1');
+        
+        toast({
+          title: 'Cadastro realizado com sucesso',
+          description: `Bem-vindo, ${googleUserData.name}!`,
+        });
+      }
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+        toast({
+          variant: 'destructive',
+          title: 'Erro ao fazer cadastro com Google',
+          description: err.message,
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const updateProfile = async (data: Partial<User>) => {
     setLoading(true);
     setError(null);
@@ -433,6 +488,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         login,
         logout,
         register,
+        registerWithGoogle,
         updateProfile,
         isAuthenticated: !!user,
         twoFactorPending,

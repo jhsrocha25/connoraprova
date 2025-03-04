@@ -108,6 +108,7 @@ export type AuthContextType = {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  registerWithGoogle: (googleUserData: { name: string; email: string; imageUrl?: string }) => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
   isAuthenticated: boolean;
   twoFactorPending?: boolean;

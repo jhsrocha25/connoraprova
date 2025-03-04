@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import PasswordStrengthIndicator from './PasswordStrengthIndicator';
 import { toast } from '@/hooks/use-toast';
+import GoogleAuthButton from './GoogleAuthButton';
 
 interface RegistrationFormProps {
   name: string;
@@ -60,6 +60,7 @@ const RegistrationForm = ({
   handleGoogleLogin
 }: RegistrationFormProps) => {
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
   
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);
@@ -81,6 +82,10 @@ const RegistrationForm = ({
     { value: "mpu", label: "Ministério Público da União" },
     { value: "tjsp", label: "Tribunal de Justiça de SP" },
   ];
+
+  const handleGoogleSuccess = () => {
+    navigate('/');
+  };
 
   return (
     <form onSubmit={onSubmit}>
@@ -258,20 +263,7 @@ const RegistrationForm = ({
           </div>
         </div>
         
-        <Button 
-          type="button" 
-          variant="outline" 
-          className="w-full" 
-          onClick={handleGoogleLogin}
-        >
-          <svg className="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-            <path fill="#FFC107" d="M43.6,20H24v8h11.3c-1.1,5.2-5.5,8-11.3,8c-6.6,0-12-5.4-12-12s5.4-12,12-12c3.1,0,5.8,1.2,8,3.1 l6.1-6.1C33.7,4.6,29.1,2,24,2C12.4,2,3,11.4,3,23s9.4,21,21,21s21-9.4,21-21C45,22.6,44.5,21.3,43.6,20z"/>
-            <path fill="#FF3D00" d="M6.3,13.7l7.1,5.3c1.8-4.8,6.3-8,11.6-8c3.1,0,5.8,1.2,8,3.1l6.1-6.1C33.7,4.6,29.1,2,24,2 C16.1,2,9.3,6.8,6.3,13.7z"/>
-            <path fill="#4CAF50" d="M24,44c5,0,9.6-2.5,12.2-6.7l-6.7-5.3c-1.8,2.6-5.2,4-8.5,4c-5.8,0-10.2-4.8-11.3-10H3.1 C5.9,37.2,14.1,44,24,44z"/>
-            <path fill="#1976D2" d="M43.6,20H24v8h11.3c-0.5,2.6-2,4.8-4.2,6.3l6.7,5.3c4.9-4.6,7.2-11.3,7.2-18.6C45,22.6,44.5,21.3,43.6,20z"/>
-          </svg>
-          Cadastrar com Google
-        </Button>
+        <GoogleAuthButton onSuccess={handleGoogleSuccess} loading={loading} />
         
         <div className="text-center text-sm">
           Já tem uma conta?{' '}
@@ -285,6 +277,11 @@ const RegistrationForm = ({
         
         <div className="text-center text-xs text-muted-foreground">
           <Link to="/recovery" className="hover:underline">Esqueceu sua senha?</Link>
+        </div>
+        
+        <div className="text-xs text-muted-foreground text-center mt-4">
+          Ao se cadastrar, você concorda com nossa política de privacidade e termos de uso.
+          Seus dados serão tratados com segurança e confidencialidade.
         </div>
       </div>
     </form>

@@ -57,6 +57,9 @@ const App = () => (
             />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/terms" element={<div>Termos de Uso</div>} />
+            <Route path="/privacy" element={<div>Política de Privacidade</div>} />
+            <Route path="/recovery" element={<div>Recuperação de Senha</div>} />
             <Route 
               path="/settings" 
               element={
