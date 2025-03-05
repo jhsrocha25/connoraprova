@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, ChevronRight } from 'lucide-react';
@@ -10,19 +10,24 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const SubscriptionSuccess = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const location = useLocation();
+  const { isAuthenticated, user, updatePaymentStatus } = useAuth();
   const { subscription, availablePlans } = usePayment();
   
-  // Redirecionar se não estiver autenticado ou não tiver assinatura
+  // Verifica se a rota está acessível e se não tem pagamento confirmado ainda
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
     } else if (!subscription) {
       navigate('/subscription/plans');
+    } else if (user?.paymentStatus !== 'completed') {
+      // Atualiza o status de pagamento para 'completed' quando a página é carregada, apenas se ainda não estiver
+      updatePaymentStatus('completed');
     }
-  }, [isAuthenticated, subscription, navigate]);
+  }, [isAuthenticated, subscription, user, navigate, updatePaymentStatus]);
 
   const plan = availablePlans.find(p => p.id === subscription?.planId);
+  const fromRegistration = location.state?.fromRegistration === true;
   
   return (
     <div className="min-h-screen bg-background">
@@ -36,11 +41,18 @@ const SubscriptionSuccess = () => {
             </div>
           </div>
           
-          <h1 className="text-3xl font-bold tracking-tight mb-4">Assinatura Confirmada!</h1>
+          <h1 className="text-3xl font-bold tracking-tight mb-4">
+            {fromRegistration 
+              ? 'Cadastro e Pagamento Confirmados!' 
+              : 'Assinatura Confirmada!'}
+          </h1>
+          
           <p className="text-muted-foreground mb-8">
-            {subscription?.status === 'trialing' 
-              ? `Seu período de teste de ${plan?.trialDays} dias começou hoje.` 
-              : 'Sua assinatura foi ativada com sucesso!'}
+            {fromRegistration 
+              ? 'Sua conta foi ativada com sucesso. Um e-mail de confirmação foi enviado.' 
+              : subscription?.status === 'trialing' 
+                ? `Seu período de teste de ${plan?.trialDays} dias começou hoje.` 
+                : 'Sua assinatura foi ativada com sucesso!'}
           </p>
           
           <Card className="mb-8">

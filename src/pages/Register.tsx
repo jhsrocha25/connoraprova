@@ -93,7 +93,8 @@ const Register = () => {
     if (twoFactorPending) {
       const success = await verifyLoginCode(verificationCode);
       if (success) {
-        navigate('/');
+        // Após verificação, redirecionar para pagamento
+        navigate('/subscription/plans', { state: { fromRegistration: true } });
       }
       return;
     }
@@ -131,6 +132,7 @@ const Register = () => {
     
     try {
       await register(name, email, password);
+      // Nota: o redirecionamento para pagamento acontece após a verificação 2FA
     } catch (err) {
       console.error("Erro ao registrar:", err);
     }

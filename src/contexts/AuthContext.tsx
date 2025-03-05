@@ -245,7 +245,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       setTwoFactorPending(false);
       
-      // Complete the login with mockUser for demo purposes
+      // Complete the login with mockUser for demo purposes, mas marca como pagamento pendente para novos usuários
       if (pendingVerificationEmail === mockUser.email) {
         setUser(mockUser);
         localStorage.setItem('user', JSON.stringify(mockUser));
@@ -257,6 +257,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           name: pendingUserData.name,
           email: pendingUserData.email,
           joinedDate: new Date(),
+          paymentStatus: 'pending' // Marca como pagamento pendente para novos usuários
         };
         
         setUser(newUser);
@@ -479,6 +480,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const updatePaymentStatus = async (status: 'pending' | 'completed' | 'failed'): Promise<void> => {
+    if (!user) return;
+    
+    const updatedUser = {
+      ...user,
+      paymentStatus: status
+    };
+    
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    
+    if (status === 'completed') {
+      // Enviar e-mail de confirmação de pagamento
+      sendPaymentConfirmationEmail(user.email);
+      
+      toast({
+        title: "Pagamento confirmado",
+        description: "Seu pagamento foi confirmado e um e-mail de confirmação foi enviado.",
+      });
+    }
+  };
+  
+  const sendPaymentConfirmationEmail = async (email: string): Promise<void> => {
+    // Simulação de envio de e-mail (em um ambiente real, aqui seria integrado com um serviço de e-mail)
+    console.log(`Enviando e-mail de confirmação de pagamento para ${email}`);
+    
+    // Em um ambiente de desenvolvimento, vamos simular o envio
+    toast({
+      title: "E-mail enviado",
+      description: `Um e-mail de confirmação foi enviado para ${email}.`,
+    });
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -492,7 +526,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         updateProfile,
         isAuthenticated: !!user,
         twoFactorPending,
-        verifyLoginCode
+        verifyLoginCode,
+        updatePaymentStatus
       }}
     >
       {children}

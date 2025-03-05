@@ -8,9 +8,15 @@ type ProtectedRouteProps = {
   children: ReactNode;
   allowedRoles?: string[];
   bypassForAdmin?: boolean;
+  requirePayment?: boolean; // Novo parâmetro para verificar pagamento
 };
 
-const ProtectedRoute = ({ children, allowedRoles, bypassForAdmin = false }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ 
+  children, 
+  allowedRoles, 
+  bypassForAdmin = false,
+  requirePayment = true // Por padrão, exige pagamento
+}: ProtectedRouteProps) => {
   const { user, loading, isAuthenticated, twoFactorPending } = useAuth();
   const location = useLocation();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
@@ -41,9 +47,12 @@ const ProtectedRoute = ({ children, allowedRoles, bypassForAdmin = false }: Prot
       return;
     }
 
-    // Check if user is authenticated and authorized based on roles
+    // Check if user is authenticated, authorized based on roles, and has confirmed payment
     if (!loading) {
       if (!isAuthenticated) {
+        setIsAuthorized(false);
+      } else if (requirePayment && user?.paymentStatus !== 'completed') {
+        // Se pagamento é necessário e não está completado, redirecionar para pagamento
         setIsAuthorized(false);
       } else if (allowedRoles && user) {
         // Check if user has the required role
@@ -52,7 +61,7 @@ const ProtectedRoute = ({ children, allowedRoles, bypassForAdmin = false }: Prot
         setIsAuthorized(true);
       }
     }
-  }, [loading, isAuthenticated, user, allowedRoles, bypassForAdmin, location.pathname]);
+  }, [loading, isAuthenticated, user, allowedRoles, bypassForAdmin, location.pathname, requirePayment]);
 
   if (loading || isAuthorized === null) {
     return (
@@ -72,6 +81,9 @@ const ProtectedRoute = ({ children, allowedRoles, bypassForAdmin = false }: Prot
     if (!isAuthenticated) {
       // Redirect to login and remember where they were trying to go
       return <Navigate to="/login" state={{ from: location }} replace />;
+    } else if (user?.paymentStatus !== 'completed' && requirePayment) {
+      // Usuário autenticado mas sem pagamento confirmado
+      return <Navigate to="/subscription/plans" state={{ from: location }} replace />;
     } else {
       // User is authenticated but doesn't have the required role
       return <Navigate to="/" replace />;
