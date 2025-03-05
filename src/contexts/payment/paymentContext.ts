@@ -22,6 +22,7 @@ const defaultContext: PaymentContextType = {
   
   getInvoices: async () => [],
   downloadInvoice: async () => '',
+  invoices: [], // Add the invoices property to match PaymentContextType
   
   isLoading: false,
 };
