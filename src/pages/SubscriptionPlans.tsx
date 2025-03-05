@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import Navbar from '@/components/Navbar';
 import { usePayment } from '@/contexts/PaymentContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,11 +10,17 @@ import { toast } from '@/hooks/use-toast';
 import PlanSelector from '@/components/payment/PlanSelector';
 import CouponInput from '@/components/payment/CouponInput';
 import { SubscriptionPlan } from '@/lib/types';
+import { Progress } from '@/components/ui/progress';
+import { AlertCircle, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
 
 const SubscriptionPlans = () => {
   const { user, isAuthenticated } = useAuth();
   const { selectedPlan, setSelectedPlan, appliedCoupon, subscription } = usePayment();
   const [isFromRegistration, setIsFromRegistration] = useState(false);
+  const [sessionTimeLeft, setSessionTimeLeft] = useState(900); // 15 minutes in seconds
+  const [sessionExpired, setSessionExpired] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -30,6 +36,31 @@ const SubscriptionPlans = () => {
     }
   }, [subscription, navigate, location.state]);
 
+  // Session timer countdown
+  useEffect(() => {
+    if (sessionTimeLeft <= 0) {
+      setSessionExpired(true);
+      toast({
+        title: "Sessão expirada",
+        description: "Sua sessão expirou. Por favor, atualize a página para continuar.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setSessionTimeLeft(prev => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [sessionTimeLeft, toast]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
   const handlePlanSelect = (plan: SubscriptionPlan) => {
     setSelectedPlan(plan);
   };
@@ -44,12 +75,32 @@ const SubscriptionPlans = () => {
       return;
     }
 
+    // Redirect to login if not authenticated
+    if (!isAuthenticated) {
+      toast({
+        title: "Login necessário",
+        description: "Por favor, faça login para continuar com a assinatura.",
+      });
+      navigate('/login', { 
+        state: { 
+          redirectAfterLogin: '/subscription/checkout',
+          selectedPlanId: selectedPlan.id
+        } 
+      });
+      return;
+    }
+
     // Passar o estado de registro para a próxima página
     navigate('/subscription/checkout', { 
       state: { 
         fromRegistration: isFromRegistration 
       } 
     });
+  };
+
+  const handleResetSession = () => {
+    setSessionTimeLeft(900);
+    setSessionExpired(false);
   };
 
   // Calcular preço com desconto se houver cupom
@@ -74,6 +125,16 @@ const SubscriptionPlans = () => {
       
       <main className="container pt-24 pb-16">
         <div className="max-w-4xl mx-auto">
+          {/* Progress Indicator */}
+          <div className="mb-8">
+            <div className="flex justify-between text-sm mb-2">
+              <span className="font-medium text-primary">Escolha do Plano</span>
+              <span className="text-muted-foreground">Pagamento</span>
+              <span className="text-muted-foreground">Confirmação</span>
+            </div>
+            <Progress value={33} className="h-2" />
+          </div>
+
           <div className="text-center mb-12">
             <h1 className="text-3xl font-bold tracking-tight mb-2">
               {isFromRegistration 
@@ -91,6 +152,31 @@ const SubscriptionPlans = () => {
                 <p className="text-sm font-medium">
                   É necessário concluir o pagamento para ativar sua conta e ter acesso completo à plataforma.
                 </p>
+              </div>
+            )}
+
+            {sessionTimeLeft < 300 && !sessionExpired && (
+              <div className="mt-4 flex items-center justify-center">
+                <Alert variant="destructive" className="bg-red-50 border-red-200 max-w-md">
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  <AlertDescription>
+                    Sua sessão expira em {formatTime(sessionTimeLeft)}. Por favor, finalize a escolha do plano.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+
+            {sessionExpired && (
+              <div className="mt-4 flex items-center justify-center">
+                <Alert variant="destructive" className="max-w-md">
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  <AlertDescription className="flex flex-col space-y-2">
+                    <span>Sua sessão expirou. Por favor, reinicie o processo.</span>
+                    <Button size="sm" onClick={handleResetSession}>
+                      Reiniciar Sessão
+                    </Button>
+                  </AlertDescription>
+                </Alert>
               </div>
             )}
           </div>
@@ -159,15 +245,40 @@ const SubscriptionPlans = () => {
                 )}
                 
                 <CouponInput />
-                
+              </CardContent>
+              <CardFooter className="flex-col space-y-4">
                 <Button 
                   onClick={handleContinue} 
-                  className="w-full mt-4" 
-                  disabled={!selectedPlan}
+                  className="w-full" 
+                  disabled={!selectedPlan || sessionExpired}
                 >
                   Continuar para pagamento
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
-              </CardContent>
+
+                {!isAuthenticated && (
+                  <div className="w-full space-y-2">
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">
+                        ou faça login para continuar
+                      </span>
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t"></span>
+                      </div>
+                    </div>
+                    <GoogleAuthButton label="Continuar com Google" />
+                  </div>
+                )}
+                
+                <Button 
+                  variant="ghost" 
+                  onClick={() => navigate('/')}
+                  className="w-full"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Voltar para a página inicial
+                </Button>
+              </CardFooter>
             </Card>
           </div>
         </div>

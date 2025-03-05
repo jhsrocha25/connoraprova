@@ -1,20 +1,25 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, CreditCard, CheckCircle, Lock, QrCode, Landmark, Loader2 } from 'lucide-react';
+import { ArrowLeft, CreditCard, CheckCircle, Lock, QrCode, Landmark, Loader2, Timer } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { usePayment } from '@/contexts/PaymentContext';
 import { useAuth } from '@/contexts/AuthContext';
 import PaymentForm from '@/components/payment/PaymentForm';
+import { Progress } from '@/components/ui/progress';
+import PixPayment from '@/components/payment/PixPayment';
+import BoletoPayment from '@/components/payment/BoletoPayment';
+import { toast } from '@/hooks/use-toast';
 
 const SubscriptionCheckout = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated, user } = useAuth();
   const { 
     selectedPlan, 
@@ -23,27 +28,69 @@ const SubscriptionCheckout = () => {
     isLoading, 
     appliedCoupon,
     applyCoupon,
-    setAppliedCoupon
+    generatePixPayment,
+    generateBoletoPayment
   } = usePayment();
   
   const [couponCode, setCouponCode] = useState('');
   const [paymentTab, setPaymentTab] = useState('card');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [sessionTimeLeft, setSessionTimeLeft] = useState(900); // 15 minutes in seconds
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const [pixData, setPixData] = useState<any>(null);
+  const [boletoData, setBoletoData] = useState<any>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Redirecionar se não houver plano selecionado
-  React.useEffect(() => {
+  useEffect(() => {
     if (!selectedPlan) {
       navigate('/subscription/plans');
     }
   }, [selectedPlan, navigate]);
 
   // Redirecionar se não estiver autenticado
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isAuthenticated) {
-      navigate('/login');
+      navigate('/login', { 
+        state: { 
+          redirectAfterLogin: '/subscription/plans'
+        } 
+      });
     }
   }, [isAuthenticated, navigate]);
+
+  // Session timer countdown
+  useEffect(() => {
+    if (sessionTimeLeft <= 0) {
+      setSessionExpired(true);
+      toast({
+        title: "Sessão expirada",
+        description: "Sua sessão de pagamento expirou. Por favor, tente novamente.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setSessionTimeLeft(prev => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [sessionTimeLeft, toast]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  const handleResetSession = () => {
+    setSessionTimeLeft(900);
+    setSessionExpired(false);
+    setPixData(null);
+    setBoletoData(null);
+  };
 
   if (!selectedPlan) {
     return (
@@ -70,19 +117,85 @@ const SubscriptionCheckout = () => {
     }
   };
 
+  const handlePixPayment = async () => {
+    if (!selectedPlan) return;
+    
+    setIsProcessing(true);
+    try {
+      const pixResponse = await generatePixPayment?.(priceDetails?.finalPrice || selectedPlan.price, `Assinatura ${selectedPlan.name}`);
+      setPixData(pixResponse);
+      setPaymentTab('pix');
+    } catch (error) {
+      console.error('Error generating PIX payment:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao gerar pagamento PIX",
+        description: "Não foi possível gerar o pagamento. Tente novamente ou use outro método.",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleBoletoPayment = async () => {
+    if (!selectedPlan) return;
+    
+    setIsProcessing(true);
+    try {
+      const boletoResponse = await generateBoletoPayment?.(priceDetails?.finalPrice || selectedPlan.price, `Assinatura ${selectedPlan.name}`);
+      setBoletoData(boletoResponse);
+      setPaymentTab('boleto');
+    } catch (error) {
+      console.error('Error generating boleto payment:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao gerar boleto",
+        description: "Não foi possível gerar o boleto. Tente novamente ou use outro método.",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleComplete = async () => {
+    if (sessionExpired) {
+      toast({
+        variant: "destructive",
+        title: "Sessão expirada",
+        description: "Sua sessão expirou. Por favor, reinicie o processo.",
+      });
+      return;
+    }
+
     let paymentMethodId;
     
     if (paymentTab === 'card' && paymentMethods.length > 0) {
       paymentMethodId = selectedPaymentMethod || paymentMethods.find(m => m.isDefault)?.id;
     }
     
-    if (!paymentMethodId && paymentTab !== 'new-card') {
+    if (!paymentMethodId && paymentTab === 'card' && paymentMethods.length > 0) {
+      toast({
+        variant: "destructive",
+        title: "Método de pagamento necessário",
+        description: "Por favor, selecione um cartão ou adicione um novo.",
+      });
       return;
     }
     
-    await createSubscription(selectedPlan.id, paymentMethodId);
-    navigate('/subscription/success');
+    setIsProcessing(true);
+    try {
+      await createSubscription(selectedPlan.id, paymentMethodId);
+      navigate('/subscription/success');
+    } catch (error) {
+      console.error('Error creating subscription:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao processar assinatura",
+        description: "Não foi possível criar sua assinatura. Tente novamente.",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const calculateTotal = () => {
@@ -105,6 +218,12 @@ const SubscriptionCheckout = () => {
     }).format(amount);
   };
 
+  const priceDetails = {
+    originalPrice: selectedPlan.price,
+    discount: appliedCoupon ? selectedPlan.price * (appliedCoupon.discountPercentage / 100) : 0,
+    finalPrice: calculateTotal()
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -120,6 +239,28 @@ const SubscriptionCheckout = () => {
             Voltar para planos
           </Button>
           
+          {/* Progress Indicator */}
+          <div className="mb-8">
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-muted-foreground">Escolha do Plano</span>
+              <span className="font-medium text-primary">Pagamento</span>
+              <span className="text-muted-foreground">Confirmação</span>
+            </div>
+            <Progress value={66} className="h-2" />
+          </div>
+
+          {/* Session timer */}
+          <div className="mb-4 flex justify-center">
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
+              sessionTimeLeft < 300 ? 'bg-red-100 text-red-800' : 'bg-primary/10 text-primary'
+            }`}>
+              <Timer className="h-4 w-4" />
+              <span className="text-sm font-medium">
+                Tempo restante: {formatTime(sessionTimeLeft)}
+              </span>
+            </div>
+          </div>
+          
           <h1 className="text-3xl font-bold tracking-tight mb-8">Finalizar Assinatura</h1>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -133,10 +274,11 @@ const SubscriptionCheckout = () => {
                 </CardHeader>
                 <CardContent>
                   <Tabs value={paymentTab} onValueChange={setPaymentTab}>
-                    <TabsList className="grid grid-cols-3 mb-6">
+                    <TabsList className="grid grid-cols-4 mb-6">
                       <TabsTrigger value="card">Cartão Salvo</TabsTrigger>
                       <TabsTrigger value="new-card">Novo Cartão</TabsTrigger>
-                      <TabsTrigger value="other">Outros Métodos</TabsTrigger>
+                      <TabsTrigger value="pix">PIX</TabsTrigger>
+                      <TabsTrigger value="boleto">Boleto</TabsTrigger>
                     </TabsList>
                     
                     <TabsContent value="card">
@@ -183,66 +325,137 @@ const SubscriptionCheckout = () => {
                                 </div>
                               </div>
                             ))}
+
+                          <div className="mt-6">
+                            <Button 
+                              onClick={handleComplete} 
+                              className="w-full"
+                              disabled={isProcessing || sessionExpired || (!selectedPaymentMethod && !paymentMethods.find(m => m.isDefault))}
+                            >
+                              {isProcessing ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Processando...
+                                </>
+                              ) : (
+                                <>
+                                  Finalizar Pagamento
+                                </>
+                              )}
+                            </Button>
+                          </div>
                         </div>
                       )}
                     </TabsContent>
                     
                     <TabsContent value="new-card">
                       <PaymentForm />
+                      <div className="mt-6">
+                        <Button 
+                          onClick={handleComplete} 
+                          className="w-full"
+                          disabled={isProcessing || sessionExpired}
+                        >
+                          {isProcessing ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Processando...
+                            </>
+                          ) : (
+                            <>
+                              Finalizar Pagamento
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </TabsContent>
                     
-                    <TabsContent value="other">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div 
-                          className="p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-                          onClick={() => {
-                            usePayment().addPaymentMethod({
-                              type: 'pix',
-                              isDefault: false
-                            });
-                            setPaymentTab('card');
-                          }}
-                        >
-                          <div className="flex items-center space-x-4">
-                            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
-                              <QrCode className="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                              <p className="font-medium">PIX</p>
-                              <p className="text-sm text-muted-foreground">
-                                Pagamento instantâneo
-                              </p>
-                            </div>
+                    <TabsContent value="pix">
+                      {pixData ? (
+                        <PixPayment 
+                          qrCodeBase64={pixData.qrCodeBase64}
+                          qrCodeText={pixData.qrCode}
+                          expirationDate={pixData.expirationDate}
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                          <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10">
+                            <QrCode className="h-8 w-8 text-primary" />
                           </div>
+                          <h3 className="text-lg font-medium">Pagamento via PIX</h3>
+                          <p className="text-center text-muted-foreground max-w-md">
+                            Pague instantaneamente usando o QR Code PIX. O pagamento é processado em segundos.
+                          </p>
+                          <Button 
+                            onClick={handlePixPayment}
+                            disabled={isProcessing || sessionExpired}
+                            className="mt-2"
+                          >
+                            {isProcessing ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Gerando PIX...
+                              </>
+                            ) : (
+                              <>
+                                Gerar QR Code PIX
+                              </>
+                            )}
+                          </Button>
                         </div>
-                        
-                        <div 
-                          className="p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-                          onClick={() => {
-                            usePayment().addPaymentMethod({
-                              type: 'boleto',
-                              isDefault: false
-                            });
-                            setPaymentTab('card');
-                          }}
-                        >
-                          <div className="flex items-center space-x-4">
-                            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
-                              <Landmark className="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                              <p className="font-medium">Boleto Bancário</p>
-                              <p className="text-sm text-muted-foreground">
-                                Vencimento em 3 dias úteis
-                              </p>
-                            </div>
+                      )}
+                    </TabsContent>
+                    
+                    <TabsContent value="boleto">
+                      {boletoData ? (
+                        <BoletoPayment 
+                          barcodeContent={boletoData.barcodeContent}
+                          boletoUrl={boletoData.boletoUrl}
+                          expirationDate={boletoData.expirationDate}
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                          <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10">
+                            <Landmark className="h-8 w-8 text-primary" />
                           </div>
+                          <h3 className="text-lg font-medium">Pagamento via Boleto</h3>
+                          <p className="text-center text-muted-foreground max-w-md">
+                            Gere um boleto bancário para pagar em qualquer agência bancária, lotérica ou internet banking.
+                            O prazo de compensação é de até 3 dias úteis.
+                          </p>
+                          <Button 
+                            onClick={handleBoletoPayment}
+                            disabled={isProcessing || sessionExpired}
+                            className="mt-2"
+                          >
+                            {isProcessing ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Gerando Boleto...
+                              </>
+                            ) : (
+                              <>
+                                Gerar Boleto
+                              </>
+                            )}
+                          </Button>
                         </div>
-                      </div>
+                      )}
                     </TabsContent>
                   </Tabs>
                 </CardContent>
               </Card>
+
+              {sessionExpired && (
+                <Alert variant="destructive">
+                  <AlertDescription className="flex flex-col space-y-2">
+                    <span>Sua sessão de pagamento expirou. Por favor, reinicie o processo.</span>
+                    <Button size="sm" onClick={handleResetSession} variant="outline">
+                      Reiniciar Sessão
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
             
             <div className="space-y-6">
@@ -260,7 +473,7 @@ const SubscriptionCheckout = () => {
                     {appliedCoupon && (
                       <div className="flex justify-between text-green-600">
                         <span>Desconto ({appliedCoupon.code})</span>
-                        <span>-{formatCurrency(selectedPlan.price * (appliedCoupon.discountPercentage / 100))}</span>
+                        <span>-{formatCurrency(priceDetails.discount)}</span>
                       </div>
                     )}
                     
@@ -268,7 +481,7 @@ const SubscriptionCheckout = () => {
                     
                     <div className="flex justify-between font-medium">
                       <span>Total</span>
-                      <span>{formatCurrency(calculateTotal())}</span>
+                      <span>{formatCurrency(priceDetails.finalPrice)}</span>
                     </div>
                     
                     {selectedPlan.trialDays && (
@@ -293,30 +506,12 @@ const SubscriptionCheckout = () => {
                       <Button 
                         variant="outline" 
                         onClick={handleApplyCoupon}
-                        disabled={isApplyingCoupon || !couponCode.trim()}
+                        disabled={isApplyingCoupon || !couponCode.trim() || sessionExpired}
                       >
                         {isApplyingCoupon ? 'Aplicando...' : 'Aplicar'}
                       </Button>
                     </div>
                   )}
-                  
-                  <Button 
-                    className="w-full" 
-                    onClick={handleComplete}
-                    disabled={isLoading || (paymentTab === 'card' && !selectedPaymentMethod && !paymentMethods.find(m => m.isDefault))}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processando...
-                      </>
-                    ) : (
-                      <>
-                        <Lock className="mr-2 h-4 w-4" />
-                        Finalizar Assinatura
-                      </>
-                    )}
-                  </Button>
                   
                   <div className="text-center text-xs text-muted-foreground">
                     Ao continuar, você concorda com os{' '}
@@ -330,6 +525,15 @@ const SubscriptionCheckout = () => {
                   </div>
                 </CardFooter>
               </Card>
+
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => navigate('/subscription/plans')}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Alterar plano selecionado
+              </Button>
             </div>
           </div>
         </div>

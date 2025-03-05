@@ -1,99 +1,167 @@
 
 import React, { useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { CheckCircle, ChevronRight } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Navbar from '@/components/Navbar';
 import { usePayment } from '@/contexts/PaymentContext';
-import { useAuth } from '@/contexts/auth';
+import { useAuth } from '@/contexts/AuthContext';
+import { CheckCircle, ArrowRight, Home } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 
 const SubscriptionSuccess = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { isAuthenticated, user, updatePaymentStatus } = useAuth();
-  const { subscription, availablePlans } = usePayment();
-  
-  // Verifica se a rota está acessível e se não tem pagamento confirmado ainda
+  const { user, isAuthenticated } = useAuth();
+  const { selectedPlan, subscription } = usePayment();
+
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
-    } else if (!subscription) {
-      navigate('/subscription/plans');
-    } else if (user?.paymentStatus !== 'completed') {
-      // Atualiza o status de pagamento para 'completed' quando a página é carregada, apenas se ainda não estiver
-      updatePaymentStatus('completed');
     }
-  }, [isAuthenticated, subscription, user, navigate, updatePaymentStatus]);
+    if (!selectedPlan && !subscription) {
+      navigate('/subscription/plans');
+    }
+  }, [isAuthenticated, selectedPlan, subscription, navigate]);
 
-  const plan = availablePlans.find(p => p.id === subscription?.planId);
-  const fromRegistration = location.state?.fromRegistration === true;
-  
+  const formatDate = (date: Date | undefined) => {
+    if (!date) return '';
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }).format(new Date(date));
+  };
+
+  // Determine which plan info to show (selected plan or current subscription)
+  const planToShow = subscription?.planId 
+    ? { id: subscription.planId, name: subscription.planId.includes('mensal') ? 'Plano Mensal' : 
+        subscription.planId.includes('trimestral') ? 'Plano Trimestral' : 'Plano Anual' }
+    : selectedPlan;
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       
       <main className="container pt-24 pb-16">
-        <div className="max-w-lg mx-auto text-center">
-          <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
-              <CheckCircle className="h-10 w-10 text-green-600" />
+        <div className="max-w-2xl mx-auto">
+          {/* Progress Indicator */}
+          <div className="mb-8">
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-muted-foreground">Escolha do Plano</span>
+              <span className="text-muted-foreground">Pagamento</span>
+              <span className="font-medium text-primary">Confirmação</span>
             </div>
+            <Progress value={100} className="h-2" />
           </div>
           
-          <h1 className="text-3xl font-bold tracking-tight mb-4">
-            {fromRegistration 
-              ? 'Cadastro e Pagamento Confirmados!' 
-              : 'Assinatura Confirmada!'}
-          </h1>
-          
-          <p className="text-muted-foreground mb-8">
-            {fromRegistration 
-              ? 'Sua conta foi ativada com sucesso. Um e-mail de confirmação foi enviado.' 
-              : subscription?.status === 'trialing' 
-                ? `Seu período de teste de ${plan?.trialDays} dias começou hoje.` 
-                : 'Sua assinatura foi ativada com sucesso!'}
-          </p>
-          
-          <Card className="mb-8">
+          <Card className="border-green-200 bg-green-50">
+            <CardHeader className="text-center border-b border-green-100 pb-6">
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                  <CheckCircle className="h-8 w-8 text-green-600" />
+                </div>
+              </div>
+              <CardTitle className="text-2xl text-green-800">Pagamento Confirmado!</CardTitle>
+              <CardDescription className="text-green-700">
+                Sua assinatura foi ativada com sucesso
+              </CardDescription>
+            </CardHeader>
             <CardContent className="pt-6">
               <div className="space-y-4">
-                <div className="text-center">
-                  <h2 className="text-xl font-medium">{plan?.name}</h2>
-                  <p className="text-muted-foreground">{plan?.description}</p>
+                <div className="p-4 bg-white rounded-lg">
+                  <h3 className="font-medium text-lg mb-2">Detalhes da Assinatura</h3>
+                  
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Plano:</span>
+                      <span className="font-medium">{planToShow?.name}</span>
+                    </div>
+                    
+                    {subscription && (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Status:</span>
+                          <span className="font-medium capitalize">
+                            {subscription.status === 'active' ? 'Ativa' : 
+                             subscription.status === 'trialing' ? 'Em período de teste' : 
+                             subscription.status === 'canceled' ? 'Cancelada' : 
+                             subscription.status === 'past_due' ? 'Pagamento atrasado' : 
+                             subscription.status}
+                          </span>
+                        </div>
+                        
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Início do período:</span>
+                          <span>{formatDate(subscription.currentPeriodStart)}</span>
+                        </div>
+                        
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Próxima cobrança:</span>
+                          <span>{formatDate(subscription.currentPeriodEnd)}</span>
+                        </div>
+                        
+                        {subscription.trialEnd && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Fim do período de teste:</span>
+                            <span>{formatDate(subscription.trialEnd)}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
                 
-                <div className="bg-muted/30 rounded p-4">
-                  <p className="font-medium">Detalhes da assinatura:</p>
-                  <ul className="text-sm space-y-2 mt-2">
-                    <li className="flex justify-between">
-                      <span>Plano:</span>
-                      <span>{plan?.name}</span>
+                <div className="p-4 bg-white rounded-lg">
+                  <h3 className="font-medium text-lg mb-2">O que você pode fazer agora?</h3>
+                  
+                  <ul className="space-y-3">
+                    <li className="flex items-start">
+                      <CheckCircle className="h-5 w-5 text-green-600 mr-2 shrink-0 mt-0.5" />
+                      <span>Explorar cursos e materiais de estudo exclusivos</span>
                     </li>
-                    <li className="flex justify-between">
-                      <span>Status:</span>
-                      <span>{subscription?.status === 'trialing' ? 'Período de teste' : 'Ativa'}</span>
+                    <li className="flex items-start">
+                      <CheckCircle className="h-5 w-5 text-green-600 mr-2 shrink-0 mt-0.5" />
+                      <span>Realizar simulados ilimitados para testar seu conhecimento</span>
                     </li>
-                    <li className="flex justify-between">
-                      <span>Próxima cobrança:</span>
-                      <span>{new Date(subscription?.currentPeriodEnd || '').toLocaleDateString()}</span>
+                    <li className="flex items-start">
+                      <CheckCircle className="h-5 w-5 text-green-600 mr-2 shrink-0 mt-0.5" />
+                      <span>Acessar conteúdos premium e atualizações de concursos</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="h-5 w-5 text-green-600 mr-2 shrink-0 mt-0.5" />
+                      <span>Conferir seu histórico de pagamentos e gerenciar sua assinatura</span>
                     </li>
                   </ul>
                 </div>
               </div>
             </CardContent>
+            <CardFooter className="flex-col space-y-4 pt-2">
+              <Button 
+                className="w-full"
+                onClick={() => navigate('/courses')}
+              >
+                Explorar cursos
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => navigate('/settings')}
+              >
+                Gerenciar assinatura
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                className="w-full"
+                onClick={() => navigate('/')}
+              >
+                <Home className="mr-2 h-4 w-4" />
+                Ir para a página inicial
+              </Button>
+            </CardFooter>
           </Card>
-          
-          <div className="space-y-4">
-            <Button onClick={() => navigate('/courses')} className="w-full">
-              Explorar Cursos
-              <ChevronRight className="h-4 w-4 ml-2" />
-            </Button>
-            
-            <Button variant="outline" onClick={() => navigate('/settings')} className="w-full">
-              Gerenciar Assinatura
-            </Button>
-          </div>
         </div>
       </main>
     </div>
