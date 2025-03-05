@@ -1,43 +1,31 @@
 
-import { 
-  PaymentMethod, 
-  PaymentInvoice, 
-  Subscription, 
-  SubscriptionPlan, 
-  Coupon, 
-  MercadoPagoCheckout
-} from '@/lib/types';
+import { SubscriptionPlan, PaymentMethod, PaymentInvoice } from '@/lib/types';
 
-export interface PaymentContextState {
+export interface PaymentContextType {
+  // Payment methods management
   paymentMethods: PaymentMethod[];
-  invoices: PaymentInvoice[];
-  subscription: Subscription | null;
-  availablePlans: SubscriptionPlan[];
-  activeCoupons: Coupon[];
-  isLoading: boolean;
-  error: string | null;
+  addPaymentMethod: (method: Partial<PaymentMethod>) => Promise<void>;
+  removePaymentMethod: (id: string) => Promise<void>;
+  setDefaultPaymentMethod: (id: string) => Promise<void>;
+  processCardPayment: (cardDetails: any) => Promise<boolean>;
+  
+  // Subscription management
+  subscription: SubscriptionPlan | null;
   selectedPlan: SubscriptionPlan | null;
-  selectedPaymentMethod: PaymentMethod | null;
-  appliedCoupon: Coupon | null;
-  isMercadoPagoReady: boolean;
-}
-
-export interface PaymentContextActions {
-  addPaymentMethod: (paymentMethodData: Partial<PaymentMethod>) => Promise<void>;
-  removePaymentMethod: (paymentMethodId: string) => Promise<void>;
-  setDefaultPaymentMethod: (paymentMethodId: string) => Promise<void>;
+  setSelectedPlan: (plan: SubscriptionPlan | null) => void;
+  availablePlans: SubscriptionPlan[];
   createSubscription: (planId: string, paymentMethodId?: string) => Promise<void>;
   cancelSubscription: () => Promise<void>;
-  updateSubscription: (planId: string) => Promise<void>;
-  applyCoupon: (couponCode: string) => Promise<boolean>;
+  
+  // Coupon management
+  appliedCoupon: { code: string; discountPercentage: number } | null;
+  setAppliedCoupon: (coupon: { code: string; discountPercentage: number } | null) => void;
+  applyCoupon: (code: string) => Promise<boolean>;
+  
+  // Invoice management
   getInvoices: () => Promise<PaymentInvoice[]>;
   downloadInvoice: (invoiceId: string) => Promise<string>;
-  setSelectedPlan: (plan: SubscriptionPlan | null) => void;
-  setSelectedPaymentMethod: (method: PaymentMethod | null) => void;
-  setAppliedCoupon: (coupon: Coupon | null) => void;
-  generatePixPayment: (amount: number, description: string) => Promise<MercadoPagoCheckout>;
-  generateBoletoPayment: (amount: number, description: string) => Promise<MercadoPagoCheckout>;
-  processCardPayment: (cardInfo: any, amount: number, description: string) => Promise<string>;
+  
+  // Loading state
+  isLoading: boolean;
 }
-
-export type PaymentContextType = PaymentContextState & PaymentContextActions;

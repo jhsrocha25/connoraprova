@@ -2,14 +2,30 @@
 import { createContext, useContext } from 'react';
 import { PaymentContextType } from './paymentContextTypes';
 
-const PaymentContext = createContext<PaymentContextType | undefined>(undefined);
-
-export const usePayment = () => {
-  const context = useContext(PaymentContext);
-  if (context === undefined) {
-    throw new Error('usePayment must be used within a PaymentProvider');
-  }
-  return context;
+const defaultContext: PaymentContextType = {
+  paymentMethods: [],
+  addPaymentMethod: async () => {},
+  removePaymentMethod: async () => {},
+  setDefaultPaymentMethod: async () => {},
+  processCardPayment: async () => false,
+  
+  subscription: null,
+  selectedPlan: null,
+  setSelectedPlan: () => {},
+  availablePlans: [],
+  createSubscription: async () => {},
+  cancelSubscription: async () => {},
+  
+  appliedCoupon: null,
+  setAppliedCoupon: () => {},
+  applyCoupon: async () => false,
+  
+  getInvoices: async () => [],
+  downloadInvoice: async () => '',
+  
+  isLoading: false,
 };
 
-export default PaymentContext;
+export const PaymentContext = createContext<PaymentContextType>(defaultContext);
+
+export const usePayment = () => useContext(PaymentContext);

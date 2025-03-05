@@ -16,7 +16,7 @@ import UserSettings from "./pages/UserSettings";
 import AdminDashboard from "./pages/AdminDashboard";
 import Courses from "./pages/Courses";
 import { AuthProvider } from "./contexts/auth";
-import { PaymentProvider } from "./contexts/PaymentContext";
+import { PaymentProvider } from "./contexts/payment";
 import ProtectedRoute from "./components/ProtectedRoute";
 import SubscriptionPlans from "./pages/SubscriptionPlans";
 import SubscriptionCheckout from "./pages/SubscriptionCheckout";

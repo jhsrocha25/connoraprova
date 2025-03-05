@@ -1,278 +1,106 @@
 
-import { toast } from '@/components/ui/use-toast';
-import MercadoPagoService from '@/services/mercadoPagoService';
-import { 
-  PaymentMethod, 
-  PaymentInvoice, 
-  Subscription, 
-  SubscriptionPlan, 
-  Coupon,
-  MercadoPagoCheckout
-} from '@/lib/types';
+import { PaymentMethod, PaymentInvoice, SubscriptionPlan } from '@/lib/types';
 import { subscriptionPlans } from '@/lib/subscriptionData';
 
-// Helper function to process card payments
-export const processCardPayment = async (
-  cardInfo: any, 
-  amount: number, 
-  description: string,
-  setIsLoading: (loading: boolean) => void,
-  setError: (error: string | null) => void
-): Promise<string> => {
-  setIsLoading(true);
-  setError(null);
+// Mock data for development
+const mockPaymentMethods: PaymentMethod[] = [
+  {
+    id: 'pm_1',
+    type: 'credit',
+    brand: 'visa',
+    last4: '4242',
+    holderName: 'User Test',
+    expiryMonth: 12,
+    expiryYear: 2025,
+    isDefault: true,
+  }
+];
+
+const mockInvoices: PaymentInvoice[] = [
+  {
+    id: 'in_1',
+    subscriptionId: 'sub_1',
+    amount: 49.90,
+    status: 'paid',
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    paidAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+  }
+];
+
+// Payment operations
+export const fetchPaymentMethods = async (): Promise<PaymentMethod[]> => {
+  // In a real app, this would be an API call
+  return mockPaymentMethods;
+};
+
+export const addPaymentMethod = async (method: Partial<PaymentMethod>): Promise<PaymentMethod> => {
+  // In a real app, this would be an API call
+  const newMethod: PaymentMethod = {
+    id: `pm_${Date.now()}`,
+    type: method.type || 'credit',
+    brand: method.brand || 'visa',
+    last4: method.last4 || '0000',
+    holderName: method.holderName || '',
+    expiryMonth: method.expiryMonth || 12,
+    expiryYear: method.expiryYear || 2025,
+    isDefault: method.isDefault || false,
+  };
   
-  try {
-    const cardToken = await MercadoPagoService.createCardToken({
-      cardholderName: cardInfo.holderName,
-      cardNumber: cardInfo.cardNumber,
-      expirationMonth: cardInfo.expiryMonth,
-      expirationYear: cardInfo.expiryYear,
-      securityCode: cardInfo.securityCode
-    });
-    
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    toast({
-      title: "Pagamento processado",
-      description: "Seu pagamento foi processado com sucesso.",
-    });
-    
-    return cardToken;
-  } catch (err) {
-    setError("Erro ao processar pagamento com cartão");
-    toast({
-      variant: "destructive",
-      title: "Erro",
-      description: "Não foi possível processar seu pagamento. Verifique os dados do cartão.",
-    });
-    throw err;
-  } finally {
-    setIsLoading(false);
+  // Add to mock data
+  mockPaymentMethods.push(newMethod);
+  
+  return newMethod;
+};
+
+export const removePaymentMethod = async (id: string): Promise<void> => {
+  // In a real app, this would be an API call
+  const index = mockPaymentMethods.findIndex(method => method.id === id);
+  if (index !== -1) {
+    mockPaymentMethods.splice(index, 1);
   }
 };
 
-// Generate PIX payment
-export const generatePixPayment = async (
-  amount: number, 
-  description: string,
-  setIsLoading: (loading: boolean) => void,
-  setError: (error: string | null) => void
-): Promise<MercadoPagoCheckout> => {
-  setIsLoading(true);
-  setError(null);
-  
-  try {
-    const pixData = await MercadoPagoService.generatePixPayment(amount, description);
-    
-    toast({
-      title: "PIX gerado",
-      description: "Seu código PIX foi gerado com sucesso. Escaneie o QR code para pagar.",
-    });
-    
-    return {
-      preferenceId: `pix_${Math.random().toString(36).substring(2, 10)}`,
-      qrCode: pixData.qrCode,
-      qrCodeBase64: pixData.qrCodeBase64,
-      expirationDate: pixData.expirationDate
-    };
-  } catch (err) {
-    setError("Erro ao gerar pagamento PIX");
-    toast({
-      variant: "destructive",
-      title: "Erro",
-      description: "Não foi possível gerar o pagamento PIX. Tente novamente mais tarde.",
-    });
-    throw err;
-  } finally {
-    setIsLoading(false);
-  }
+export const setDefaultPaymentMethod = async (id: string): Promise<void> => {
+  // In a real app, this would be an API call
+  mockPaymentMethods.forEach(method => {
+    method.isDefault = method.id === id;
+  });
 };
 
-// Generate Boleto payment
-export const generateBoletoPayment = async (
-  amount: number, 
-  description: string,
-  setIsLoading: (loading: boolean) => void,
-  setError: (error: string | null) => void
-): Promise<MercadoPagoCheckout> => {
-  setIsLoading(true);
-  setError(null);
-  
-  try {
-    const userInfo = {
-      email: 'usuario@exemplo.com',
-      firstName: 'Nome',
-      lastName: 'Sobrenome',
-      cpf: '12345678900',
-      zipCode: '01234567',
-      street: 'Rua Exemplo',
-      number: '123',
-      neighborhood: 'Bairro',
-      city: 'Cidade',
-      state: 'SP'
-    };
-    
-    const boletoData = await MercadoPagoService.generateBoletoPayment(amount, description, userInfo);
-    
-    toast({
-      title: "Boleto gerado",
-      description: "Seu boleto foi gerado com sucesso. Acesse o link para visualizar.",
-    });
-    
-    return {
-      preferenceId: `boleto_${Math.random().toString(36).substring(2, 10)}`,
-      boletoUrl: boletoData.boletoUrl,
-      barcodeContent: boletoData.barcode,
-      expirationDate: boletoData.expirationDate
-    };
-  } catch (err) {
-    setError("Erro ao gerar boleto");
-    toast({
-      variant: "destructive",
-      title: "Erro",
-      description: "Não foi possível gerar o boleto. Tente novamente mais tarde.",
-    });
-    throw err;
-  } finally {
-    setIsLoading(false);
-  }
+// Subscription operations
+export const fetchSubscription = async (): Promise<SubscriptionPlan | null> => {
+  // In a real app, this would be an API call
+  return null;
 };
 
-// Add payment method
-export const addPaymentMethod = async (
-  paymentMethodData: Partial<PaymentMethod>,
-  paymentMethods: PaymentMethod[],
-  setPaymentMethods: (methods: PaymentMethod[]) => void,
-  setIsLoading: (loading: boolean) => void,
-  setError: (error: string | null) => void,
-  processPayment: (cardInfo: any, amount: number, description: string) => Promise<string>
-): Promise<void> => {
-  setIsLoading(true);
-  setError(null);
-  
-  try {
-    if ((paymentMethodData.type === 'credit' || paymentMethodData.type === 'debit') && 
-        paymentMethodData.holderName && 
-        paymentMethodData.cardNumber && 
-        paymentMethodData.securityCode) {
-      
-      const cardToken = await processPayment(
-        paymentMethodData,
-        1,
-        'Validação de cartão'
-      );
-      
-      paymentMethodData.mpToken = cardToken;
-    }
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const newPaymentMethod: PaymentMethod = {
-      id: `pm_${Math.random().toString(36).substr(2, 9)}`,
-      type: paymentMethodData.type || 'credit',
-      brand: paymentMethodData.brand || 'visa',
-      last4: paymentMethodData.last4 || '4242',
-      holderName: paymentMethodData.holderName || '',
-      expiryMonth: paymentMethodData.expiryMonth || 12,
-      expiryYear: paymentMethodData.expiryYear || 2025,
-      isDefault: paymentMethods.length === 0 ? true : !!paymentMethodData.isDefault,
-      createdAt: new Date(),
-      mpToken: paymentMethodData.mpToken
-    };
-    
-    let updatedMethods = [...paymentMethods];
-    if (newPaymentMethod.isDefault) {
-      updatedMethods = updatedMethods.map(method => ({
-        ...method,
-        isDefault: false
-      }));
-    }
-    
-    setPaymentMethods([...updatedMethods, newPaymentMethod]);
-    
-    toast({
-      title: "Método de pagamento adicionado",
-      description: "Seu novo método de pagamento foi salvo com sucesso.",
-    });
-  } catch (err) {
-    setError("Erro ao adicionar método de pagamento");
-    toast({
-      variant: "destructive",
-      title: "Erro",
-      description: "Não foi possível adicionar o método de pagamento.",
-    });
-  } finally {
-    setIsLoading(false);
-  }
+export const createSubscription = async (planId: string, paymentMethodId?: string): Promise<void> => {
+  // In a real app, this would be an API call
+  console.log(`Creating subscription for plan ${planId} with payment method ${paymentMethodId || 'default'}`);
 };
 
-// Create subscription
-export const createSubscription = async (
-  planId: string,
-  paymentMethodId: string | undefined,
-  paymentMethods: PaymentMethod[],
-  invoices: PaymentInvoice[],
-  appliedCoupon: Coupon | null,
-  userId: string,
-  setSubscription: (subscription: Subscription) => void,
-  setInvoices: (invoices: PaymentInvoice[]) => void,
-  setIsLoading: (loading: boolean) => void,
-  setError: (error: string | null) => void
-): Promise<void> => {
-  setIsLoading(true);
-  setError(null);
-  
-  try {
-    const plan = subscriptionPlans.find(plan => plan.id === planId);
-    if (!plan) {
-      throw new Error("Plano não encontrado");
-    }
-    
-    let methodId = paymentMethodId;
-    if (!methodId) {
-      const defaultMethod = paymentMethods.find(method => method.isDefault);
-      if (!defaultMethod) {
-        throw new Error("Nenhum método de pagamento encontrado");
-      }
-      methodId = defaultMethod.id;
-    }
-    
-    const finalAmount = plan.price * (1 - (appliedCoupon?.discountPercentage || 0) / 100);
-    
-    const newSubscription = await MercadoPagoService.createSubscription(
-      plan.id,
-      methodId,
-      userId,
-      plan
-    );
-    
-    const invoice = await MercadoPagoService.generateInvoice(
-      newSubscription.id,
-      plan.price,
-      appliedCoupon?.discountPercentage
-    );
-    
-    setSubscription(newSubscription);
-    setInvoices([...invoices, invoice]);
-    
-    toast({
-      title: "Assinatura criada",
-      description: `Sua assinatura do plano ${plan.name} foi criada com sucesso!`,
-    });
-  } catch (err) {
-    let message = "Erro ao criar assinatura";
-    if (err instanceof Error) {
-      message = err.message;
-    }
-    
-    setError(message);
-    toast({
-      variant: "destructive",
-      title: "Erro",
-      description: message,
-    });
-  } finally {
-    setIsLoading(false);
+export const cancelSubscription = async (): Promise<void> => {
+  // In a real app, this would be an API call
+  console.log('Cancelling subscription');
+};
+
+// Invoice operations
+export const fetchInvoices = async (): Promise<PaymentInvoice[]> => {
+  // In a real app, this would be an API call
+  return mockInvoices;
+};
+
+export const downloadInvoice = async (invoiceId: string): Promise<string> => {
+  // In a real app, this would be an API call
+  return `https://example.com/invoices/${invoiceId}`;
+};
+
+export const processCouponCode = async (code: string): Promise<{ code: string; discountPercentage: number } | null> => {
+  // In a real app, this would be an API call to validate the coupon
+  if (code.toUpperCase() === 'WELCOME10') {
+    return { code: 'WELCOME10', discountPercentage: 10 };
   }
+  if (code.toUpperCase() === 'SAVE20') {
+    return { code: 'SAVE20', discountPercentage: 20 };
+  }
+  return null;
 };
