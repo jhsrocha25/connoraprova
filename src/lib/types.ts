@@ -71,6 +71,7 @@ export interface User {
   joinedDate: Date;
   progress: UserProgress;
   subscription?: Subscription;
+  paymentStatus?: 'pending' | 'completed' | 'failed';
 }
 
 export interface Concurso {

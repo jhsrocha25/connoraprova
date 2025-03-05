@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, ChevronRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { usePayment } from '@/contexts/PaymentContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 
 const SubscriptionSuccess = () => {
   const navigate = useNavigate();
