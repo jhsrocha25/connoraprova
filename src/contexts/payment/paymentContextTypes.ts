@@ -10,7 +10,7 @@ export interface PaymentContextType {
   processCardPayment: (cardDetails: any) => Promise<boolean>;
   
   // Subscription management
-  subscription: SubscriptionPlan | null;
+  subscription: Subscription | null;
   selectedPlan: SubscriptionPlan | null;
   setSelectedPlan: (plan: SubscriptionPlan | null) => void;
   availablePlans: SubscriptionPlan[];
@@ -26,6 +26,21 @@ export interface PaymentContextType {
   getInvoices: () => Promise<PaymentInvoice[]>;
   downloadInvoice: (invoiceId: string) => Promise<string>;
   
+  // MercadoPago specific functions
+  generatePixPayment?: (amount: number, description: string) => Promise<any>;
+  generateBoletoPayment?: (amount: number, description: string) => Promise<any>;
+  
   // Loading state
   isLoading: boolean;
+}
+
+export interface Subscription {
+  id: string;
+  planId: string;
+  status: 'active' | 'canceled' | 'past_due' | 'trialing' | 'pending';
+  currentPeriodStart: Date;
+  currentPeriodEnd: Date;
+  cancelAtPeriodEnd: boolean;
+  paymentMethodId?: string;
+  trialEnd?: Date;
 }

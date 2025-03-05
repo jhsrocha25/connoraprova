@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { PaymentContext } from './paymentContext';
 import { SubscriptionPlan, PaymentMethod, PaymentInvoice } from '@/lib/types';
 import { subscriptionPlans } from '@/lib/subscriptionData';
 import { useToast } from "@/hooks/use-toast";
+import { Subscription } from './paymentContextTypes';
 import {
   fetchPaymentMethods,
   addPaymentMethod as addPaymentMethodOperation,
@@ -25,11 +25,10 @@ export const PaymentProvider: React.FC<PaymentProviderProps> = ({ children }) =>
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
-  const [subscription, setSubscription] = useState<SubscriptionPlan | null>(null);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountPercentage: number } | null>(null);
 
-  // Initialize payment data
   useEffect(() => {
     const initPaymentData = async () => {
       try {
@@ -54,7 +53,6 @@ export const PaymentProvider: React.FC<PaymentProviderProps> = ({ children }) =>
     initPaymentData();
   }, [toast]);
 
-  // Payment method management
   const addPaymentMethod = async (method: Partial<PaymentMethod>) => {
     try {
       setIsLoading(true);
@@ -65,8 +63,6 @@ export const PaymentProvider: React.FC<PaymentProviderProps> = ({ children }) =>
         title: "Método de pagamento adicionado",
         description: "Seu método de pagamento foi salvo com sucesso.",
       });
-      
-      return newMethod;
     } catch (error) {
       console.error('Error adding payment method:', error);
       toast({
@@ -126,7 +122,7 @@ export const PaymentProvider: React.FC<PaymentProviderProps> = ({ children }) =>
       setIsLoading(false);
     }
   };
-  
+
   const processCardPayment = async (cardDetails: any) => {
     try {
       setIsLoading(true);
@@ -155,7 +151,6 @@ export const PaymentProvider: React.FC<PaymentProviderProps> = ({ children }) =>
     }
   };
 
-  // Subscription management
   const createSubscription = async (planId: string, paymentMethodId?: string) => {
     try {
       setIsLoading(true);
@@ -169,8 +164,8 @@ export const PaymentProvider: React.FC<PaymentProviderProps> = ({ children }) =>
         endDate.setDate(now.getDate() + 30); // 30 days subscription
         
         setSubscription({
-          ...plan,
           id: `sub_${Date.now()}`,
+          planId: plan.id,
           status: plan.trialDays ? 'trialing' : 'active',
           currentPeriodStart: now,
           currentPeriodEnd: endDate,
@@ -225,7 +220,6 @@ export const PaymentProvider: React.FC<PaymentProviderProps> = ({ children }) =>
     }
   };
 
-  // Coupon management
   const applyCoupon = async (code: string) => {
     try {
       setIsLoading(true);
@@ -255,7 +249,6 @@ export const PaymentProvider: React.FC<PaymentProviderProps> = ({ children }) =>
     }
   };
 
-  // Invoice management
   const getInvoices = async () => {
     try {
       setIsLoading(true);
@@ -292,6 +285,26 @@ export const PaymentProvider: React.FC<PaymentProviderProps> = ({ children }) =>
     }
   };
 
+  const generatePixPayment = async (amount: number, description: string) => {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return {
+      qrCodeBase64: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAAYKElEQVR4Xu2d23bbOgxE6///6Pa4TbzqS3Ux4ADgWX02iDUDkKIouYm...",
+      qrCode: "00020126580014br.gov.bcb.pix0136b76aa9c5-645a-463a-9875-fd8730ce454f5204000053039865802BR5912TestCompany6009SaoPaulo622905257MGGvMcfNNijl3HXXZ6304DF13",
+      expirationDate: new Date(Date.now() + 24 * 60 * 60 * 1000)
+    };
+  };
+
+  const generateBoletoPayment = async (amount: number, description: string) => {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return {
+      boletoUrl: "https://www.mercadopago.com.br/payments/123456789/boleto",
+      barcodeContent: "23793.38128 60048.741591 84806.801014 2 89550000035000",
+      expirationDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+    };
+  };
+
   return (
     <PaymentContext.Provider
       value={{
@@ -314,6 +327,9 @@ export const PaymentProvider: React.FC<PaymentProviderProps> = ({ children }) =>
         
         getInvoices,
         downloadInvoice,
+        
+        generatePixPayment,
+        generateBoletoPayment,
         
         isLoading,
       }}

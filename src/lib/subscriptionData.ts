@@ -6,7 +6,7 @@ export const subscriptionPlans: SubscriptionPlan[] = [
     id: 'plano-mensal',
     name: 'Plano Mensal',
     description: 'Acesso a todos os recursos premium por um mês',
-    price: 49.90,
+    price: 29.90,
     interval: 'monthly',
     features: [
       'Acesso a todos os cursos',
@@ -20,7 +20,7 @@ export const subscriptionPlans: SubscriptionPlan[] = [
     id: 'plano-trimestral',
     name: 'Plano Trimestral',
     description: 'Economize 15% com o plano trimestral',
-    price: 127.50,
+    price: 79.90,
     interval: 'quarterly',
     features: [
       'Todos os benefícios do plano mensal',
@@ -35,7 +35,7 @@ export const subscriptionPlans: SubscriptionPlan[] = [
     id: 'plano-anual',
     name: 'Plano Anual',
     description: 'Melhor valor: economize 30% com o plano anual',
-    price: 419.90,
+    price: 349.90,
     interval: 'annual',
     features: [
       'Todos os benefícios dos planos anteriores',

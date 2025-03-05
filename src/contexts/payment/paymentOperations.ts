@@ -1,6 +1,7 @@
 
 import { PaymentMethod, PaymentInvoice, SubscriptionPlan } from '@/lib/types';
 import { subscriptionPlans } from '@/lib/subscriptionData';
+import { Subscription } from './paymentContextTypes';
 
 // Mock data for development
 const mockPaymentMethods: PaymentMethod[] = [
@@ -13,6 +14,7 @@ const mockPaymentMethods: PaymentMethod[] = [
     expiryMonth: 12,
     expiryYear: 2025,
     isDefault: true,
+    createdAt: new Date()
   }
 ];
 
@@ -22,8 +24,10 @@ const mockInvoices: PaymentInvoice[] = [
     subscriptionId: 'sub_1',
     amount: 49.90,
     status: 'paid',
+    paymentMethod: 'credit',
     createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
     paidAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    dueDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
   }
 ];
 
@@ -44,6 +48,7 @@ export const addPaymentMethod = async (method: Partial<PaymentMethod>): Promise<
     expiryMonth: method.expiryMonth || 12,
     expiryYear: method.expiryYear || 2025,
     isDefault: method.isDefault || false,
+    createdAt: new Date()
   };
   
   // Add to mock data
@@ -68,7 +73,7 @@ export const setDefaultPaymentMethod = async (id: string): Promise<void> => {
 };
 
 // Subscription operations
-export const fetchSubscription = async (): Promise<SubscriptionPlan | null> => {
+export const fetchSubscription = async (): Promise<Subscription | null> => {
   // In a real app, this would be an API call
   return null;
 };
