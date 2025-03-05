@@ -25,6 +25,7 @@ export interface PaymentContextType {
   // Invoice management
   getInvoices: () => Promise<PaymentInvoice[]>;
   downloadInvoice: (invoiceId: string) => Promise<string>;
+  invoices: PaymentInvoice[]; // Add this property for direct access to invoices
   
   // MercadoPago specific functions
   generatePixPayment?: (amount: number, description: string) => Promise<any>;

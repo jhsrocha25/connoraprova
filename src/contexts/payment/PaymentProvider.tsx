@@ -28,6 +28,7 @@ export const PaymentProvider: React.FC<PaymentProviderProps> = ({ children }) =>
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountPercentage: number } | null>(null);
+  const [invoices, setInvoices] = useState<PaymentInvoice[]>([]);
 
   useEffect(() => {
     const initPaymentData = async () => {
@@ -38,6 +39,9 @@ export const PaymentProvider: React.FC<PaymentProviderProps> = ({ children }) =>
         
         const sub = await fetchSubscription();
         setSubscription(sub);
+        
+        const fetchedInvoices = await fetchInvoices();
+        setInvoices(fetchedInvoices);
       } catch (error) {
         console.error('Error initializing payment data:', error);
         toast({
@@ -252,8 +256,9 @@ export const PaymentProvider: React.FC<PaymentProviderProps> = ({ children }) =>
   const getInvoices = async () => {
     try {
       setIsLoading(true);
-      const invoices = await fetchInvoices();
-      return invoices;
+      const fetchedInvoices = await fetchInvoices();
+      setInvoices(fetchedInvoices);
+      return fetchedInvoices;
     } catch (error) {
       console.error('Error fetching invoices:', error);
       toast({
@@ -327,6 +332,7 @@ export const PaymentProvider: React.FC<PaymentProviderProps> = ({ children }) =>
         
         getInvoices,
         downloadInvoice,
+        invoices,
         
         generatePixPayment,
         generateBoletoPayment,
