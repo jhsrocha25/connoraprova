@@ -1,6 +1,21 @@
-
 import { useState } from 'react';
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis, Line, LineChart, Area, AreaChart, ComposedChart } from 'recharts';
+import { 
+  Bar, 
+  BarChart, 
+  CartesianGrid, 
+  Legend, 
+  ResponsiveContainer, 
+  Tooltip, 
+  XAxis, 
+  YAxis, 
+  Line, 
+  LineChart, 
+  Area, 
+  AreaChart, 
+  ComposedChart,
+  Pie,
+  PieChart
+} from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -22,7 +37,7 @@ import {
   Award, 
   Clock, 
   BarChart2, 
-  PieChart, 
+  PieChart as PieChartIcon, 
   Brain, 
   CheckCircle, 
   XCircle,
@@ -161,7 +176,7 @@ const ProgressChart = ({ progress }: ProgressChartProps) => {
               Por Curso
             </TabsTrigger>
             <TabsTrigger value="overall">
-              <PieChart className="h-4 w-4 mr-2" />
+              <PieChartIcon className="h-4 w-4 mr-2" />
               Geral
             </TabsTrigger>
           </TabsList>
@@ -522,7 +537,7 @@ const ProgressChart = ({ progress }: ProgressChartProps) => {
                         <CardTitle className="text-lg flex items-center">
                           <Clock className="h-5 w-5 mr-2 text-primary" />
                           Tempo Médio de Resposta
-                        </CardTitle>
+                        CardTitle>
                         <CardDescription>Análise do seu tempo para responder questões</CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -589,7 +604,7 @@ const ProgressChart = ({ progress }: ProgressChartProps) => {
                         <CardTitle className="text-lg flex items-center">
                           <Trophy className="h-5 w-5 mr-2 text-primary" />
                           Ranking de Desempenho
-                        </CardTitle>
+                        CardTitle>
                         <CardDescription>Os melhores desempenhos da plataforma</CardDescription>
                       </CardHeader>
                       <CardContent>
