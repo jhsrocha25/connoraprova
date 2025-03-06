@@ -1,5 +1,5 @@
-
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress as ProgressBar } from '@/components/ui/progress';
@@ -12,6 +12,8 @@ import ProgressChart from '@/components/ProgressChart';
 
 const Progress = () => {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [searchParams] = useSearchParams();
+  const defaultTab = searchParams.get('tab') || 'general';
   
   useEffect(() => {
     // Simulate loading state
@@ -166,7 +168,7 @@ const Progress = () => {
           </div>
 
           <div className="mb-8">
-            <ProgressChart progress={userProgress} />
+            <ProgressChart progress={userProgress} defaultTab={defaultTab} />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">

@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Clock, BookOpen, BarChart2, TrendingUp, Award, MessageSquare } from 'lucide-react';
+import { Clock, BookOpen, BarChart2, TrendingUp, Award, MessageSquare, ExternalLink } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CourseCard from '@/components/CourseCard';
 import { mockCourses, mockUser } from '@/lib/data';
@@ -14,24 +13,20 @@ const Index = () => {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    // Simulate loading
     const timer = setTimeout(() => {
       setIsLoaded(true);
     }, 500);
     return () => clearTimeout(timer);
   }, []);
 
-  // Calculate overall progress
   const totalProgress = mockUser.progress.courseProgress.reduce((sum, course) => sum + course.progress, 0);
   const averageProgress = Math.round(totalProgress / mockUser.progress.courseProgress.length);
 
-  // Get courses sorted by progress
   const inProgressCourses = [...mockCourses]
     .filter(course => (course.progress || 0) > 0 && (course.progress || 0) < 100)
     .sort((a, b) => (b.progress || 0) - (a.progress || 0))
     .slice(0, 3);
-  
-  // Get courses sorted by last accessed (most recent first)
+
   const recentCourses = [...mockCourses]
     .sort((a, b) => {
       const courseAProgress = mockUser.progress.courseProgress.find(p => p.courseId === a.id);
@@ -74,92 +69,107 @@ const Index = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card className="border animate-slide-up delay-100">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center">
-                  <Award className="h-4 w-4 mr-2 text-primary" />
-                  Desempenho Geral
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {mockUser.progress.correctAnswers} / {mockUser.progress.totalQuestionsAnswered}
-                </div>
-                <p className="text-xs text-muted-foreground">Questões corretas</p>
-                <div className="mt-3 flex items-end justify-between">
-                  <div>
-                    <p className="text-sm font-medium">Taxa de acerto</p>
-                    <p className="text-2xl font-bold">
-                      {Math.round((mockUser.progress.correctAnswers / mockUser.progress.totalQuestionsAnswered) * 100)}%
-                    </p>
+            <Link to="/progress?tab=general" className="block group">
+              <Card className="border animate-slide-up delay-100 transition-all hover:border-primary hover:shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center">
+                    <Award className="h-4 w-4 mr-2 text-primary" />
+                    <span className="flex items-center">
+                      Desempenho Geral
+                      <ExternalLink className="h-3 w-3 ml-1.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {mockUser.progress.correctAnswers} / {mockUser.progress.totalQuestionsAnswered}
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    <div className="flex items-center">
-                      <TrendingUp className="h-4 w-4 mr-1 text-green-500" />
-                      <span className="text-green-500 font-medium">+5%</span>
-                      <span className="ml-1">esta semana</span>
+                  <p className="text-xs text-muted-foreground">Questões corretas</p>
+                  <div className="mt-3 flex items-end justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Taxa de acerto</p>
+                      <p className="text-2xl font-bold">
+                        {Math.round((mockUser.progress.correctAnswers / mockUser.progress.totalQuestionsAnswered) * 100)}%
+                      </p>
                     </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border animate-slide-up delay-200">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center">
-                  <BookOpen className="h-4 w-4 mr-2 text-primary" />
-                  Progresso nos Cursos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {averageProgress}%
-                </div>
-                <p className="text-xs text-muted-foreground">Progresso médio</p>
-                <div className="mt-3 space-y-2">
-                  {mockUser.progress.courseProgress.slice(0, 3).map((course, index) => (
-                    <div key={course.courseId} className="space-y-1">
-                      <div className="flex justify-between items-center text-sm">
-                        <span>Curso {course.courseId}</span>
-                        <span className="font-medium">{course.progress}%</span>
-                      </div>
-                      <Progress value={course.progress} className="h-1.5" />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border animate-slide-up delay-300">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center">
-                  <BarChart2 className="h-4 w-4 mr-2 text-primary" />
-                  Desempenho por Categoria
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {mockUser.progress.performanceByCategory[0].category}
-                </div>
-                <p className="text-xs text-muted-foreground">Melhor categoria</p>
-                <div className="mt-3 space-y-3">
-                  {mockUser.progress.performanceByCategory.map((category) => (
-                    <div key={category.category} className="flex items-center justify-between">
-                      <span className="text-sm mr-4 truncate max-w-[180px]">{category.category}</span>
+                    <div className="text-sm text-muted-foreground">
                       <div className="flex items-center">
-                        <span className="text-sm font-semibold mr-2">{category.correctPercentage}%</span>
-                        <div className="w-16 h-2 bg-muted overflow-hidden rounded-full">
-                          <div 
-                            className="h-full bg-primary rounded-full"
-                            style={{ width: `${category.correctPercentage}%` }}
-                          />
+                        <TrendingUp className="h-4 w-4 mr-1 text-green-500" />
+                        <span className="text-green-500 font-medium">+5%</span>
+                        <span className="ml-1">esta semana</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link to="/progress?tab=courses" className="block group">
+              <Card className="border animate-slide-up delay-200 transition-all hover:border-primary hover:shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center">
+                    <BookOpen className="h-4 w-4 mr-2 text-primary" />
+                    <span className="flex items-center">
+                      Progresso nos Cursos
+                      <ExternalLink className="h-3 w-3 ml-1.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {averageProgress}%
+                  </div>
+                  <p className="text-xs text-muted-foreground">Progresso médio</p>
+                  <div className="mt-3 space-y-2">
+                    {mockUser.progress.courseProgress.slice(0, 3).map((course, index) => (
+                      <div key={course.courseId} className="space-y-1">
+                        <div className="flex justify-between items-center text-sm">
+                          <span>Curso {course.courseId}</span>
+                          <span className="font-medium">{course.progress}%</span>
+                        </div>
+                        <Progress value={course.progress} className="h-1.5" />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link to="/progress?tab=categories" className="block group">
+              <Card className="border animate-slide-up delay-300 transition-all hover:border-primary hover:shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center">
+                    <BarChart2 className="h-4 w-4 mr-2 text-primary" />
+                    <span className="flex items-center">
+                      Desempenho por Categoria
+                      <ExternalLink className="h-3 w-3 ml-1.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {mockUser.progress.performanceByCategory[0].category}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Melhor categoria</p>
+                  <div className="mt-3 space-y-3">
+                    {mockUser.progress.performanceByCategory.map((category) => (
+                      <div key={category.category} className="flex items-center justify-between">
+                        <span className="text-sm mr-4 truncate max-w-[180px]">{category.category}</span>
+                        <div className="flex items-center">
+                          <span className="text-sm font-semibold mr-2">{category.correctPercentage}%</span>
+                          <div className="w-16 h-2 bg-muted overflow-hidden rounded-full">
+                            <div 
+                              className="h-full bg-primary rounded-full"
+                              style={{ width: `${category.correctPercentage}%` }}
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           </div>
 
           <div className="mb-8">
