@@ -8,12 +8,24 @@ import { Badge } from '@/components/ui/badge';
 import { QrCode, Copy, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 interface PixPaymentProps {
-  amount: number;
-  description: string;
+  amount?: number;
+  description?: string;
   onSuccess?: () => void;
+  qrCodeBase64?: string;
+  qrCodeText?: string;
+  qrCode?: string;
+  expirationDate?: Date;
 }
 
-const PixPayment: React.FC<PixPaymentProps> = ({ amount, description, onSuccess }) => {
+const PixPayment: React.FC<PixPaymentProps> = ({ 
+  amount, 
+  description, 
+  onSuccess,
+  qrCodeBase64,
+  qrCodeText,
+  qrCode,
+  expirationDate
+}) => {
   const { generatePixPayment, isLoading } = usePayment();
   const [pixData, setPixData] = useState<{
     qrCode: string;
@@ -24,7 +36,20 @@ const PixPayment: React.FC<PixPaymentProps> = ({ amount, description, onSuccess 
   const [error, setError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // If props are provided directly, use them to initialize the component
+  useEffect(() => {
+    if (qrCodeBase64 && (qrCodeText || qrCode) && expirationDate) {
+      setPixData({
+        qrCode: qrCodeText || qrCode || "",
+        qrCodeBase64,
+        expirationDate: new Date(expirationDate)
+      });
+    }
+  }, [qrCodeBase64, qrCodeText, qrCode, expirationDate]);
+
   const generatePix = async () => {
+    if (!amount || !description) return;
+    
     setIsGenerating(true);
     setError(null);
     
@@ -110,7 +135,7 @@ const PixPayment: React.FC<PixPaymentProps> = ({ amount, description, onSuccess 
           </div>
           
           <div className="mt-4 text-center space-y-1">
-            <p className="text-sm font-medium">Valor: {formatCurrency(amount)}</p>
+            {amount && <p className="text-sm font-medium">Valor: {formatCurrency(amount)}</p>}
             <p className="text-xs text-muted-foreground">
               Válido até: {formatExpirationDate(pixData.expirationDate)}
             </p>
@@ -156,7 +181,7 @@ const PixPayment: React.FC<PixPaymentProps> = ({ amount, description, onSuccess 
         {!pixData ? (
           <Button 
             onClick={generatePix} 
-            disabled={isGenerating}
+            disabled={isGenerating || !amount || !description}
             className="w-full"
           >
             {isGenerating ? (
@@ -175,7 +200,7 @@ const PixPayment: React.FC<PixPaymentProps> = ({ amount, description, onSuccess 
           <Button 
             variant="outline" 
             onClick={generatePix} 
-            disabled={isGenerating}
+            disabled={isGenerating || !amount || !description}
           >
             Gerar novo código
           </Button>

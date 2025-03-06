@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -42,14 +41,12 @@ const SubscriptionCheckout = () => {
   const [boletoData, setBoletoData] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Redirecionar se não houver plano selecionado
   useEffect(() => {
     if (!selectedPlan) {
       navigate('/subscription/plans');
     }
   }, [selectedPlan, navigate]);
 
-  // Redirecionar se não estiver autenticado
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login', { 
@@ -60,7 +57,6 @@ const SubscriptionCheckout = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  // Session timer countdown
   useEffect(() => {
     if (sessionTimeLeft <= 0) {
       setSessionExpired(true);
@@ -239,7 +235,6 @@ const SubscriptionCheckout = () => {
             Voltar para planos
           </Button>
           
-          {/* Progress Indicator */}
           <div className="mb-8">
             <div className="flex justify-between text-sm mb-2">
               <span className="text-muted-foreground">Escolha do Plano</span>
@@ -249,7 +244,6 @@ const SubscriptionCheckout = () => {
             <Progress value={66} className="h-2" />
           </div>
 
-          {/* Session timer */}
           <div className="mb-4 flex justify-center">
             <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
               sessionTimeLeft < 300 ? 'bg-red-100 text-red-800' : 'bg-primary/10 text-primary'
@@ -376,6 +370,8 @@ const SubscriptionCheckout = () => {
                           qrCodeBase64={pixData.qrCodeBase64}
                           qrCodeText={pixData.qrCode}
                           expirationDate={pixData.expirationDate}
+                          amount={priceDetails?.finalPrice}
+                          description={`Assinatura ${selectedPlan?.name || ''}`}
                         />
                       ) : (
                         <div className="flex flex-col items-center justify-center py-8 space-y-4">
@@ -412,6 +408,8 @@ const SubscriptionCheckout = () => {
                           barcodeContent={boletoData.barcodeContent}
                           boletoUrl={boletoData.boletoUrl}
                           expirationDate={boletoData.expirationDate}
+                          amount={priceDetails?.finalPrice}
+                          description={`Assinatura ${selectedPlan?.name || ''}`}
                         />
                       ) : (
                         <div className="flex flex-col items-center justify-center py-8 space-y-4">

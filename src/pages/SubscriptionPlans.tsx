@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -25,18 +24,15 @@ const SubscriptionPlans = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // Verifica se o usuário veio do processo de registro
     if (location.state?.fromRegistration) {
       setIsFromRegistration(true);
     }
     
-    // Se o usuário já tem uma assinatura ativa, redireciona para a página de gerenciamento
     if (subscription && subscription.status !== 'canceled') {
       navigate('/settings');
     }
   }, [subscription, navigate, location.state]);
 
-  // Session timer countdown
   useEffect(() => {
     if (sessionTimeLeft <= 0) {
       setSessionExpired(true);
@@ -75,7 +71,6 @@ const SubscriptionPlans = () => {
       return;
     }
 
-    // Redirect to login if not authenticated
     if (!isAuthenticated) {
       toast({
         title: "Login necessário",
@@ -90,7 +85,6 @@ const SubscriptionPlans = () => {
       return;
     }
 
-    // Passar o estado de registro para a próxima página
     navigate('/subscription/checkout', { 
       state: { 
         fromRegistration: isFromRegistration 
@@ -103,7 +97,6 @@ const SubscriptionPlans = () => {
     setSessionExpired(false);
   };
 
-  // Calcular preço com desconto se houver cupom
   const calculateFinalPrice = () => {
     if (!selectedPlan) return null;
     
@@ -125,7 +118,6 @@ const SubscriptionPlans = () => {
       
       <main className="container pt-24 pb-16">
         <div className="max-w-4xl mx-auto">
-          {/* Progress Indicator */}
           <div className="mb-8">
             <div className="flex justify-between text-sm mb-2">
               <span className="font-medium text-primary">Escolha do Plano</span>

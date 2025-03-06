@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePayment } from '@/contexts/PaymentContext';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -8,12 +8,24 @@ import { Badge } from '@/components/ui/badge';
 import { Landmark, Copy, CheckCircle, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
 
 interface BoletoPaymentProps {
-  amount: number;
-  description: string;
+  amount?: number;
+  description?: string;
   onSuccess?: () => void;
+  boletoUrl?: string;
+  barcodeContent?: string;
+  barcode?: string;
+  expirationDate?: Date;
 }
 
-const BoletoPayment: React.FC<BoletoPaymentProps> = ({ amount, description, onSuccess }) => {
+const BoletoPayment: React.FC<BoletoPaymentProps> = ({ 
+  amount, 
+  description, 
+  onSuccess,
+  boletoUrl,
+  barcodeContent,
+  barcode,
+  expirationDate
+}) => {
   const { generateBoletoPayment, isLoading } = usePayment();
   const [boletoData, setBoletoData] = useState<{
     boletoUrl: string;
@@ -24,7 +36,20 @@ const BoletoPayment: React.FC<BoletoPaymentProps> = ({ amount, description, onSu
   const [error, setError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // If props are provided directly, use them to initialize the component
+  useEffect(() => {
+    if (boletoUrl && (barcodeContent || barcode) && expirationDate) {
+      setBoletoData({
+        boletoUrl,
+        barcode: barcodeContent || barcode || "",
+        expirationDate: new Date(expirationDate)
+      });
+    }
+  }, [boletoUrl, barcodeContent, barcode, expirationDate]);
+
   const generateBoleto = async () => {
+    if (!amount || !description) return;
+    
     setIsGenerating(true);
     setError(null);
     
@@ -83,7 +108,7 @@ const BoletoPayment: React.FC<BoletoPaymentProps> = ({ amount, description, onSu
         </Alert>
         
         <div className="p-4 border rounded-lg text-center">
-          <div className="font-bold text-lg mb-2">{formatCurrency(amount)}</div>
+          {amount && <div className="font-bold text-lg mb-2">{formatCurrency(amount)}</div>}
           <div className="text-sm text-muted-foreground">
             Vencimento: {formatExpirationDate(boletoData.expirationDate)}
           </div>
@@ -156,7 +181,7 @@ const BoletoPayment: React.FC<BoletoPaymentProps> = ({ amount, description, onSu
         {!boletoData ? (
           <Button 
             onClick={generateBoleto} 
-            disabled={isGenerating}
+            disabled={isGenerating || !amount || !description}
             className="w-full"
           >
             {isGenerating ? (
@@ -175,7 +200,7 @@ const BoletoPayment: React.FC<BoletoPaymentProps> = ({ amount, description, onSu
           <Button 
             variant="outline" 
             onClick={generateBoleto} 
-            disabled={isGenerating}
+            disabled={isGenerating || !amount || !description}
           >
             Gerar novo boleto
           </Button>

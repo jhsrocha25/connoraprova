@@ -7,9 +7,10 @@ import { toast } from '@/hooks/use-toast';
 interface GoogleAuthButtonProps {
   onSuccess?: () => void;
   loading?: boolean;
+  label?: string;
 }
 
-const GoogleAuthButton = ({ onSuccess, loading }: GoogleAuthButtonProps) => {
+const GoogleAuthButton = ({ onSuccess, loading, label = "Cadastrar com Google" }: GoogleAuthButtonProps) => {
   const { registerWithGoogle } = useAuth();
 
   const handleGoogleLogin = async () => {
@@ -63,7 +64,7 @@ const GoogleAuthButton = ({ onSuccess, loading }: GoogleAuthButtonProps) => {
         <path fill="#4CAF50" d="M24,44c5,0,9.6-2.5,12.2-6.7l-6.7-5.3c-1.8,2.6-5.2,4-8.5,4c-5.8,0-10.2-4.8-11.3-10H3.1 C5.9,37.2,14.1,44,24,44z"/>
         <path fill="#1976D2" d="M43.6,20H24v8h11.3c-0.5,2.6-2,4.8-4.2,6.3l6.7,5.3c4.9-4.6,7.2-11.3,7.2-18.6C45,22.6,44.5,21.3,43.6,20z"/>
       </svg>
-      Cadastrar com Google
+      {label}
     </Button>
   );
 };
